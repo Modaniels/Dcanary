@@ -4,10 +4,13 @@
         "test": "jest"
     },
     "dependencies": {
-        "azle": "^0.32.0"
+        "azle": "^0.32.0",
+        "@dfinity/principal": "^2.1.0",
+        "@dfinity/candid": "^2.1.0"
     },
     "devDependencies": {
         "jest": "^30.0.2",
-        "ts-jest": "^29.4.0"
+        "ts-jest": "^29.4.0",
+        "tsx": "^4.7.0"
     }
 }
