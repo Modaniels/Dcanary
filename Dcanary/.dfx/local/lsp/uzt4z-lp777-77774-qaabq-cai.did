@@ -1,0 +1,84 @@
+service : {
+  executeBuild : (text, text) -> (
+      variant {
+        Ok : record {
+          build_time : nat64;
+          artifact_size : nat32;
+          hash : text;
+          error : text;
+          cycles_consumed : nat64;
+          success : bool;
+        };
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
+          InternalError : text;
+        };
+      },
+    );
+  getBuildHistory : (opt nat32, opt nat32) -> (
+      vec record {
+        build_time : nat64;
+        artifact_size : nat32;
+        hash : text;
+        error : text;
+        cycles_consumed : nat64;
+        success : bool;
+      },
+    ) query;
+  getHash : () -> (
+      variant {
+        Ok : text;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
+          InternalError : text;
+        };
+      },
+    ) query;
+  getStatistics : () -> (
+      record {
+        total_builds : nat32;
+        successful_builds : nat32;
+        canister_version : text;
+        verification_canister : principal;
+        deployed_at : nat64;
+        build_instructions_canister : principal;
+        failed_builds : nat32;
+        last_successful_hash : text;
+      },
+    ) query;
+  healthCheck : () -> (text) query;
+  updateBuildInstructionsCanister : (principal) -> (
+      variant {
+        Ok;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
+          InternalError : text;
+        };
+      },
+    );
+  updateVerificationCanister : (principal) -> (
+      variant {
+        Ok;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
+          InternalError : text;
+        };
+      },
+    );
+}

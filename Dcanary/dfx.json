@@ -7,6 +7,14 @@
                 "output": "test/dfx_generated/build_instructions_canister",
                 "node_compatibility": true
             }
+        },
+        "build_executor_canister": {
+            "type": "azle",
+            "main": "src/build_executor.ts",
+            "declarations": {
+                "output": "test/dfx_generated/build_executor_canister",
+                "node_compatibility": true
+            }
         }
     }
 }
