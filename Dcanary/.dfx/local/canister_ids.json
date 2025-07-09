@@ -1,14 +1,17 @@
 {
   "__Candid_UI": {
-    "local": "u6s2n-gx777-77774-qaaba-cai"
+    "local": "ulvla-h7777-77774-qaacq-cai"
   },
   "build_executor_canister": {
-    "local": "uzt4z-lp777-77774-qaabq-cai"
-  },
-  "build_instructions_canister": {
     "local": "uxrrr-q7777-77774-qaaaq-cai"
   },
+  "build_instructions_canister": {
+    "local": "u6s2n-gx777-77774-qaaba-cai"
+  },
   "verification_canister": {
+    "local": "uzt4z-lp777-77774-qaabq-cai"
+  },
+  "webhook_canister": {
     "local": "umunu-kh777-77774-qaaca-cai"
   }
 }

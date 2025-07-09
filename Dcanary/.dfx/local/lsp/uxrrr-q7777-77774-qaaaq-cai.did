@@ -1,107 +1,145 @@
 service : {
-  addInstructions : (text, text, text) -> (
-      variant {
-        Ok;
-        Err : variant {
-          InvalidInput : text;
-          NotFound : text;
-          Unauthorized : text;
-          InternalError : text;
-        };
-      },
-    );
-  addMultipleInstructions : (
-      vec record { version : text; instruction_set : text; project_id : text },
-    ) -> (
-      vec variant {
-        Ok;
-        Err : variant {
-          InvalidInput : text;
-          NotFound : text;
-          Unauthorized : text;
-          InternalError : text;
-        };
-      },
-    );
-  getAllInstructions : (opt nat32, opt nat32) -> (
-      vec record {
-        updated_at : nat64;
-        created_at : nat64;
-        created_by : principal;
-        version : text;
-        instruction_set : text;
-        project_id : text;
-      },
-    ) query;
-  getCanisterInfo : () -> (
-      record {
-        total_instructions : nat32;
-        deployed_at : nat64;
-        version : text;
-        admin_principal : principal;
-      },
-    ) query;
-  getInstructions : (text, text) -> (
+  cancelBuild : (text) -> (bool);
+  executeBuild : (text, text) -> (
       variant {
         Ok : record {
-          updated_at : nat64;
-          created_at : nat64;
-          created_by : principal;
-          version : text;
-          instruction_set : text;
-          project_id : text;
+          build_time : nat64;
+          artifact_size : nat32;
+          hash : text;
+          error : text;
+          cycles_consumed : nat64;
+          success : bool;
         };
         Err : variant {
           InvalidInput : text;
           NotFound : text;
           Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
+          InternalError : text;
+        };
+      },
+    );
+  getAgentCapabilities : () -> (
+      record {
+        available_resources : record {
+          memory_mb : nat32;
+          network_bandwidth : nat32;
+          disk_space_gb : nat32;
+          cpu_cores : nat32;
+        };
+        labels : vec text;
+        max_concurrent_builds : nat32;
+        installed_tools : vec text;
+        supported_languages : vec text;
+      },
+    ) query;
+  getAgentHealth : () -> (
+      record {
+        status : text;
+        active_builds : nat32;
+        cpu_usage : float32;
+        agent_id : principal;
+        last_heartbeat : nat64;
+        uptime : nat64;
+        queue_length : nat32;
+        memory_usage : float32;
+      },
+    ) query;
+  getBuildHistory : (opt nat32, opt nat32) -> (
+      vec record {
+        build_time : nat64;
+        artifact_size : nat32;
+        hash : text;
+        error : text;
+        cycles_consumed : nat64;
+        success : bool;
+      },
+    ) query;
+  getBuildQueueStatus : () -> (
+      record {
+        pending_builds : nat32;
+        queue_utilization : float32;
+        max_queue_size : nat32;
+        completed_builds : nat32;
+        running_builds : nat32;
+      },
+    ) query;
+  getHash : () -> (
+      variant {
+        Ok : text;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
           InternalError : text;
         };
       },
     ) query;
-  getInstructionsByProject : (text) -> (
-      vec record {
-        updated_at : nat64;
-        created_at : nat64;
-        created_by : principal;
-        version : text;
-        instruction_set : text;
-        project_id : text;
+  getResourceUsage : () -> (
+      record {
+        resource_efficiency : float32;
+        cpu_time_ms : nat64;
+        memory_peak_mb : nat32;
+        disk_used_gb : nat32;
+        network_bytes : nat64;
       },
     ) query;
   getStatistics : () -> (
       record {
-        oldest_instruction : opt nat64;
-        newest_instruction : opt nat64;
+        total_builds : nat32;
+        successful_builds : nat32;
         canister_version : text;
-        total_instructions : nat32;
+        verification_canister : principal;
         deployed_at : nat64;
-        total_projects : nat32;
-        admin_principal : principal;
+        build_instructions_canister : principal;
+        failed_builds : nat32;
+        last_successful_hash : text;
       },
     ) query;
   healthCheck : () -> (text) query;
-  instructionsExist : (text, text) -> (bool) query;
-  listProjects : () -> (vec text) query;
-  listVersions : (text) -> (vec text) query;
-  removeInstructions : (text, text) -> (
+  processNextBuild : () -> (bool);
+  queueBuildRequest : (
+      record { requester : principal; version : text; project_id : text },
+    ) -> (bool);
+  updateAgentCapabilities : (
+      record {
+        available_resources : record {
+          memory_mb : nat32;
+          network_bandwidth : nat32;
+          disk_space_gb : nat32;
+          cpu_cores : nat32;
+        };
+        labels : vec text;
+        max_concurrent_builds : nat32;
+        installed_tools : vec text;
+        supported_languages : vec text;
+      },
+    ) -> (bool);
+  updateBuildInstructionsCanister : (principal) -> (
       variant {
         Ok;
         Err : variant {
           InvalidInput : text;
           NotFound : text;
           Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
           InternalError : text;
         };
       },
     );
-  updateAdmin : (principal) -> (
+  updateVerificationCanister : (principal) -> (
       variant {
         Ok;
         Err : variant {
           InvalidInput : text;
           NotFound : text;
           Unauthorized : text;
+          SecurityViolation : text;
+          ResourceExhausted : text;
           InternalError : text;
         };
       },

@@ -1,4 +1,68 @@
 service : () -> {
+  create_pipeline_template : (
+      text,
+      record {
+        stages : vec record {
+          post_actions : vec text;
+          retry_count : nat8;
+          name : text;
+          when_condition : opt text;
+          steps : vec record {
+            configuration : vec record { text; text };
+            step_type : text;
+            timeout_seconds : nat64;
+          };
+          parallel_group : opt text;
+          timeout_minutes : nat64;
+        };
+        default_values : vec record { text; text };
+        name : text;
+        parameters : vec record {
+          text;
+          record {
+            name : text;
+            description : text;
+            required : bool;
+            param_type : text;
+            default_value : opt text;
+          };
+        };
+        description : text;
+        required_capabilities : vec text;
+        template_id : text;
+      },
+    ) -> (bool);
+  execute_pipeline_template : (text, text, vec record { text; text }) -> (
+      variant {
+        Ok : record {
+          status : variant { Failed; Verified; Pending };
+          matching_results : nat8;
+          verified_hash : opt text;
+          created_at : nat64;
+          error : opt text;
+          executor_results : vec record {
+            execution_time : opt nat64;
+            hash : opt text;
+            completed : bool;
+            error : opt text;
+            executor_id : principal;
+          };
+          completed_at : opt nat64;
+          total_executors : nat8;
+          consensus_threshold : nat8;
+        };
+        Err : variant {
+          InvalidInput : text;
+          ExecutorFailure : text;
+          InstructionsNotFound : text;
+          ConsensusFailure : text;
+          NotFound : text;
+          Unauthorized : text;
+          TimeoutError : text;
+          InternalError : text;
+        };
+      },
+    );
   get_active_verifications : () -> (
       vec record {
         text;
@@ -33,6 +97,50 @@ service : () -> {
         admin_principal : principal;
       },
     ) query;
+  get_pipeline_instance_status : (text) -> (
+      opt record {
+        status : text;
+        instance_id : text;
+        current_stage : nat32;
+        error : opt text;
+        template_id : text;
+        project_id : text;
+        completed_at : opt nat64;
+        started_at : nat64;
+      },
+    ) query;
+  get_pipeline_template : (text) -> (
+      opt record {
+        stages : vec record {
+          post_actions : vec text;
+          retry_count : nat8;
+          name : text;
+          when_condition : opt text;
+          steps : vec record {
+            configuration : vec record { text; text };
+            step_type : text;
+            timeout_seconds : nat64;
+          };
+          parallel_group : opt text;
+          timeout_minutes : nat64;
+        };
+        default_values : vec record { text; text };
+        name : text;
+        parameters : vec record {
+          text;
+          record {
+            name : text;
+            description : text;
+            required : bool;
+            param_type : text;
+            default_value : opt text;
+          };
+        };
+        description : text;
+        required_capabilities : vec text;
+        template_id : text;
+      },
+    ) query;
   get_verification_status : (text, text) -> (
       variant {
         Ok : record {
@@ -61,6 +169,42 @@ service : () -> {
           Unauthorized : text;
           TimeoutError : text;
           InternalError : text;
+        };
+      },
+    ) query;
+  list_active_pipeline_instances : () -> (vec text) query;
+  list_pipeline_templates : () -> (
+      vec record {
+        text;
+        record {
+          stages : vec record {
+            post_actions : vec text;
+            retry_count : nat8;
+            name : text;
+            when_condition : opt text;
+            steps : vec record {
+              configuration : vec record { text; text };
+              step_type : text;
+              timeout_seconds : nat64;
+            };
+            parallel_group : opt text;
+            timeout_minutes : nat64;
+          };
+          default_values : vec record { text; text };
+          name : text;
+          parameters : vec record {
+            text;
+            record {
+              name : text;
+              description : text;
+              required : bool;
+              param_type : text;
+              default_value : opt text;
+            };
+          };
+          description : text;
+          required_capabilities : vec text;
+          template_id : text;
         };
       },
     ) query;

@@ -14,6 +14,9 @@
             "declarations": {
                 "output": "test/dfx_generated/build_executor_canister",
                 "node_compatibility": true
+            },
+            "custom": {
+                "experimental": true
             }
         },
         "verification_canister": {
@@ -21,6 +24,14 @@
             "main": "src/verification_canister.ts",
             "declarations": {
                 "output": "test/dfx_generated/verification_canister",
+                "node_compatibility": true
+            }
+        },
+        "webhook_canister": {
+            "type": "azle",
+            "main": "src/webhook_canister.ts",
+            "declarations": {
+                "output": "test/dfx_generated/webhook_canister",
                 "node_compatibility": true
             }
         }

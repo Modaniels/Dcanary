@@ -1,0 +1,54 @@
+{
+  "name": "mody",
+  "version": "1.0.0",
+  "description": "Mody - Decentralized CI/CD Pipeline CLI for ICP",
+  "main": "dist/index.js",
+  "bin": {
+    "mody": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build",
+    "lint": "echo 'Linting would run here'",
+    "test": "echo 'Tests would run here'"
+  },
+  "keywords": [
+    "cli",
+    "ci/cd",
+    "pipeline",
+    "decentralized",
+    "build",
+    "verification",
+    "icp",
+    "blockchain",
+    "typescript"
+  ],
+  "author": "Mody Team",
+  "license": "MIT",
+  "dependencies": {
+    "@dfinity/agent": "^2.1.1",
+    "@dfinity/candid": "^2.1.0",
+    "@dfinity/identity": "^2.1.1",
+    "@dfinity/principal": "^2.1.0",
+    "commander": "^12.1.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.6",
+    "fs-extra": "^11.2.0",
+    "dotenv": "^16.4.5",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.6",
+    "@types/inquirer": "^8.2.10",
+    "@types/fs-extra": "^11.0.4",
+    "typescript": "^5.6.3",
+    "tsx": "^4.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

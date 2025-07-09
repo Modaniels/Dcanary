@@ -3,6 +3,7 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface _SERVICE {
+  'cancelBuild' : ActorMethod<[string], boolean>,
   'executeBuild' : ActorMethod<
     [string, string],
     {
@@ -24,6 +25,34 @@ export interface _SERVICE {
           { 'InternalError' : string }
       }
   >,
+  'getAgentCapabilities' : ActorMethod<
+    [],
+    {
+      'available_resources' : {
+        'memory_mb' : number,
+        'network_bandwidth' : number,
+        'disk_space_gb' : number,
+        'cpu_cores' : number,
+      },
+      'labels' : Array<string>,
+      'max_concurrent_builds' : number,
+      'installed_tools' : Array<string>,
+      'supported_languages' : Array<string>,
+    }
+  >,
+  'getAgentHealth' : ActorMethod<
+    [],
+    {
+      'status' : string,
+      'active_builds' : number,
+      'cpu_usage' : number,
+      'agent_id' : Principal,
+      'last_heartbeat' : bigint,
+      'uptime' : bigint,
+      'queue_length' : number,
+      'memory_usage' : number,
+    }
+  >,
   'getBuildHistory' : ActorMethod<
     [[] | [number], [] | [number]],
     Array<
@@ -37,6 +66,16 @@ export interface _SERVICE {
       }
     >
   >,
+  'getBuildQueueStatus' : ActorMethod<
+    [],
+    {
+      'pending_builds' : number,
+      'queue_utilization' : number,
+      'max_queue_size' : number,
+      'completed_builds' : number,
+      'running_builds' : number,
+    }
+  >,
   'getHash' : ActorMethod<
     [],
     { 'Ok' : string } |
@@ -48,6 +87,16 @@ export interface _SERVICE {
           { 'ResourceExhausted' : string } |
           { 'InternalError' : string }
       }
+  >,
+  'getResourceUsage' : ActorMethod<
+    [],
+    {
+      'resource_efficiency' : number,
+      'cpu_time_ms' : bigint,
+      'memory_peak_mb' : number,
+      'disk_used_gb' : number,
+      'network_bytes' : bigint,
+    }
   >,
   'getStatistics' : ActorMethod<
     [],
@@ -63,6 +112,28 @@ export interface _SERVICE {
     }
   >,
   'healthCheck' : ActorMethod<[], string>,
+  'processNextBuild' : ActorMethod<[], boolean>,
+  'queueBuildRequest' : ActorMethod<
+    [{ 'requester' : Principal, 'version' : string, 'project_id' : string }],
+    boolean
+  >,
+  'updateAgentCapabilities' : ActorMethod<
+    [
+      {
+        'available_resources' : {
+          'memory_mb' : number,
+          'network_bandwidth' : number,
+          'disk_space_gb' : number,
+          'cpu_cores' : number,
+        },
+        'labels' : Array<string>,
+        'max_concurrent_builds' : number,
+        'installed_tools' : Array<string>,
+        'supported_languages' : Array<string>,
+      },
+    ],
+    boolean
+  >,
   'updateBuildInstructionsCanister' : ActorMethod<
     [Principal],
     { 'Ok' : null } |

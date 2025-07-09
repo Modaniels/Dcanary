@@ -7,7 +7,8 @@
         "@dfinity/candid": "^2.1.0",
         "@dfinity/principal": "^2.1.0",
         "@types/node": "^20.19.6",
-        "azle": "^0.32.0"
+        "azle": "^0.32.0",
+        "azle-experimental-deps": "github:demergent-labs/azle-experimental-deps#d804c0838c50aa4221e50d8d522c86163ea68cdd"
     },
     "devDependencies": {
         "@types/jest": "^30.0.0",

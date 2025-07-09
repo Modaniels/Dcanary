@@ -1,0 +1,19 @@
+service : () -> {
+  getBuildTrigger : (text) -> () query;
+  getBuildTriggers : (text) -> () query;
+  getRepository : (text) -> () query;
+  handleWebhookEvent : (text, text, text, text, opt text) -> ();
+  listRepositoriesByProject : (text) -> () query;
+  registerRepository : (
+      text,
+      variant { GitHub; GitLab },
+      text,
+      text,
+      text,
+      bool,
+      bool,
+      vec text,
+    ) -> ();
+  setVerificationCanister : (principal) -> ();
+  updateRepository : (text, bool, bool, vec text) -> ();
+}
