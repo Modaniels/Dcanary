@@ -7,5 +7,8 @@
   },
   "build_instructions_canister": {
     "local": "uxrrr-q7777-77774-qaaaq-cai"
+  },
+  "verification_canister": {
+    "local": "umunu-kh777-77774-qaaca-cai"
   }
 }
