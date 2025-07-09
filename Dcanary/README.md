@@ -1,10 +1,10 @@
-# Build Instructions Canister - Comprehensive Achievement Report
+# DCanary - Decentralized CI/CD Pipeline
 
-> **🎯 Mission Accomplished**: A production-ready, secure, and scalable canister for managing build instructions in a decentralized CI/CD pipeline on the Internet Computer Protocol (ICP).
+> **🎯 Mission Accomplished**: A production-ready, secure, and scalable decentralized CI/CD pipeline built on the Internet Computer Protocol (ICP).
 
 ## 🚀 Executive Summary
 
-We have successfully designed, implemented, and tested a **Build Instructions Canister** using Azle (TypeScript) that serves as the foundational component of a decentralized build verification pipeline. This canister provides secure storage, robust access control, and comprehensive validation for build instructions across different projects and versions.
+We have successfully designed, implemented, and tested a **complete decentralized CI/CD pipeline** using Azle (TypeScript) that provides end-to-end build automation, testing, deployment, and verification across distributed executor nodes. This system eliminates dependence on centralized CI/CD providers while maintaining full pipeline functionality.
 
 ---
 

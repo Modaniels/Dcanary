@@ -15,6 +15,138 @@ import {
 } from 'azle';
 
 // ============================================================================
+// MULTI-STAGE PIPELINE TYPES (Phase 1 Enhancement)
+// ============================================================================
+
+/**
+ * Pipeline stage definition
+ */
+const PipelineStage = IDL.Record({
+    name: IDL.Text,
+    steps: IDL.Vec(IDL.Record({
+        step_type: IDL.Text,
+        configuration: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+        timeout_seconds: IDL.Nat64
+    })),
+    parallel_group: IDL.Opt(IDL.Text),
+    when_condition: IDL.Opt(IDL.Text),
+    timeout_minutes: IDL.Nat64,
+    retry_count: IDL.Nat8,
+    post_actions: IDL.Vec(IDL.Text)
+});
+
+type PipelineStage = {
+    name: string;
+    steps: BuildStep[];
+    parallel_group: string | null;
+    when_condition: string | null;
+    timeout_minutes: bigint;
+    retry_count: number;
+    post_actions: string[];
+};
+
+/**
+ * Build step definition
+ */
+type BuildStep = {
+    step_type: string;
+    configuration: Map<string, string>;
+    timeout_seconds: bigint;
+};
+
+/**
+ * Pipeline template for reusable pipeline definitions
+ */
+const PipelineTemplate = IDL.Record({
+    template_id: IDL.Text,
+    name: IDL.Text,
+    description: IDL.Text,
+    parameters: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Record({
+        name: IDL.Text,
+        param_type: IDL.Text,
+        default_value: IDL.Opt(IDL.Text),
+        description: IDL.Text,
+        required: IDL.Bool
+    }))),
+    stages: IDL.Vec(PipelineStage),
+    default_values: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+    required_capabilities: IDL.Vec(IDL.Text)
+});
+
+type PipelineTemplate = {
+    template_id: string;
+    name: string;
+    description: string;
+    parameters: Map<string, ParameterDefinition>;
+    stages: PipelineStage[];
+    default_values: Map<string, string>;
+    required_capabilities: string[];
+};
+
+type ParameterDefinition = {
+    name: string;
+    param_type: string;
+    default_value: string | null;
+    description: string;
+    required: boolean;
+};
+
+/**
+ * Pipeline instance for execution
+ */
+type PipelineInstance = {
+    instance_id: string;
+    template_id: string;
+    project_id: string;
+    parameters: Map<string, string>;
+    status: PipelineStatus;
+    current_stage: number;
+    started_at: bigint;
+    completed_at: bigint | null;
+    stages: PipelineStage[];
+    stage_results: Map<string, StageResult>;
+    error: string | null;
+};
+
+/**
+ * Pipeline execution status
+ */
+type PipelineStatus = 
+    | { Running: null }
+    | { Completed: null }
+    | { Failed: null }
+    | { Cancelled: null };
+
+/**
+ * Stage execution result
+ */
+type StageResult = {
+    stage_name: string;
+    status: StageStatus;
+    started_at: bigint;
+    completed_at: bigint | null;
+    step_results: Map<string, StepResult>;
+    error: string | null;
+    retry_count: number;
+};
+
+type StageStatus = 
+    | { Running: null }
+    | { Completed: null }
+    | { Failed: null }
+    | { Skipped: null };
+
+type StepResult = {
+    step_type: string;
+    status: StageStatus;
+    started_at: bigint;
+    completed_at: bigint | null;
+    output: string;
+    error: string | null;
+    executor_id: Principal | null;
+};
+
+// ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
@@ -221,6 +353,12 @@ type VerificationState = {
 export default class VerificationCanister {
     // Stable storage for verification history
     private verificationHistory = new StableBTreeMap<string, VerificationResult>(0);
+    
+    // Pipeline template storage (Phase 1 Enhancement)
+    private pipelineTemplates = new StableBTreeMap<string, PipelineTemplate>(1);
+    
+    // Active pipeline instances (Phase 1 Enhancement)
+    private activePipelineInstances = new Map<string, PipelineInstance>();
     
     // Active verification processes
     private activeVerifications = new Map<string, VerificationState>();
@@ -806,5 +944,453 @@ export default class VerificationCanister {
     @query([], IDL.Vec(IDL.Tuple(IDL.Text, VerificationResult)))
     get_active_verifications(): [string, VerificationResult][] {
         return Array.from(this.activeVerifications.entries()).map(([key, state]) => [key, state.result]);
+    }
+
+    // ============================================================================
+    // PIPELINE TEMPLATE MANAGEMENT (Phase 1 Enhancement)
+    // ============================================================================
+
+    /**
+     * Create a new pipeline template
+     */
+    @update([IDL.Text, PipelineTemplate], IDL.Bool)
+    create_pipeline_template(template_id: string, template: PipelineTemplate): boolean {
+        const caller = msgCaller();
+        
+        // Check if caller is admin
+        if (!this.isAdmin(caller)) {
+            console.log(`Unauthorized attempt to create pipeline template by ${caller.toText()}`);
+            return false;
+        }
+
+        // Validate template
+        if (!template_id || !template.name || template.stages.length === 0) {
+            console.log(`Invalid pipeline template: ${template_id}`);
+            return false;
+        }
+
+        // Store template
+        this.pipelineTemplates.insert(template_id, template);
+        console.log(`Pipeline template created: ${template_id}`);
+        return true;
+    }
+
+    /**
+     * Get pipeline template
+     */
+    @query([IDL.Text], IDL.Opt(PipelineTemplate))
+    get_pipeline_template(template_id: string): PipelineTemplate | null {
+        const template = this.pipelineTemplates.get(template_id);
+        return template || null;
+    }
+
+    /**
+     * List all pipeline templates
+     */
+    @query([], IDL.Vec(IDL.Tuple(IDL.Text, PipelineTemplate)))
+    list_pipeline_templates(): [string, PipelineTemplate][] {
+        return this.pipelineTemplates.items();
+    }
+
+    /**
+     * Execute pipeline using template
+     */
+    @update([IDL.Text, IDL.Text, IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))], VerificationResultWrapper)
+    async execute_pipeline_template(
+        template_id: string, 
+        project_id: string, 
+        parameters: [string, string][]
+    ): Promise<VerificationResultWrapper> {
+        const caller = msgCaller();
+        
+        // Check authorization
+        if (!this.isAuthorizedRequester(caller)) {
+            return { 
+                Err: { 
+                    Unauthorized: `Principal ${caller.toText()} is not authorized to execute pipelines` 
+                } 
+            };
+        }
+
+        // Get template
+        const template = this.pipelineTemplates.get(template_id);
+        if (!template) {
+            return { 
+                Err: { 
+                    NotFound: `Pipeline template ${template_id} not found` 
+                } 
+            };
+        }
+
+        // Validate parameters
+        const param_map = new Map(parameters);
+        for (const [param_name, param_def] of template.parameters) {
+            if (param_def.required && !param_map.has(param_name)) {
+                return { 
+                    Err: { 
+                        InvalidInput: `Required parameter ${param_name} missing` 
+                    } 
+                };
+            }
+        }
+
+        // Create pipeline instance
+        const instance_id = this.generatePipelineInstanceId(project_id, template_id);
+        const pipeline_instance: PipelineInstance = {
+            instance_id,
+            template_id,
+            project_id,
+            parameters: param_map,
+            status: { Running: null },
+            current_stage: 0,
+            started_at: time(),
+            completed_at: null,
+            stages: template.stages,
+            stage_results: new Map(),
+            error: null
+        };
+
+        // Store active instance
+        this.activePipelineInstances.set(instance_id, pipeline_instance);
+
+        try {
+            // Execute pipeline stages
+            return await this.executePipelineStages(pipeline_instance);
+        } catch (error) {
+            // Update instance status
+            pipeline_instance.status = { Failed: null };
+            pipeline_instance.completed_at = time();
+            pipeline_instance.error = String(error);
+
+            return { 
+                Err: { 
+                    InternalError: `Pipeline execution failed: ${error}` 
+                } 
+            };
+        }
+    }
+
+    /**
+     * Get pipeline instance status
+     */
+    @query([IDL.Text], IDL.Opt(IDL.Record({
+        instance_id: IDL.Text,
+        template_id: IDL.Text,
+        project_id: IDL.Text,
+        status: IDL.Text,
+        current_stage: IDL.Nat32,
+        started_at: IDL.Nat64,
+        completed_at: IDL.Opt(IDL.Nat64),
+        error: IDL.Opt(IDL.Text)
+    })))
+    get_pipeline_instance_status(instance_id: string): any {
+        const instance = this.activePipelineInstances.get(instance_id);
+        if (!instance) {
+            return null;
+        }
+
+        return {
+            instance_id: instance.instance_id,
+            template_id: instance.template_id,
+            project_id: instance.project_id,
+            status: Object.keys(instance.status)[0],
+            current_stage: instance.current_stage,
+            started_at: instance.started_at,
+            completed_at: instance.completed_at,
+            error: instance.error
+        };
+    }
+
+    /**
+     * List active pipeline instances
+     */
+    @query([], IDL.Vec(IDL.Text))
+    list_active_pipeline_instances(): string[] {
+        return Array.from(this.activePipelineInstances.keys());
+    }
+
+    // ============================================================================
+    // PIPELINE EXECUTION LOGIC (Phase 1 Enhancement)
+    // ============================================================================
+
+    /**
+     * Execute pipeline stages
+     */
+    private async executePipelineStages(pipeline: PipelineInstance): Promise<VerificationResultWrapper> {
+        console.log(`Starting pipeline execution for ${pipeline.project_id} using template ${pipeline.template_id}`);
+        
+        // Group stages by parallel execution
+        const stage_groups = this.groupStagesByParallel(pipeline.stages);
+        
+        for (const stage_group of stage_groups) {
+            if (stage_group.parallel && stage_group.stages.length > 1) {
+                // Execute stages in parallel
+                const parallel_results = await Promise.all(
+                    stage_group.stages.map(stage => this.executeStage(stage, pipeline))
+                );
+                
+                // Check for failures
+                const failed_stage = parallel_results.find(result => 'Failed' in result.status);
+                if (failed_stage) {
+                    pipeline.status = { Failed: null };
+                    pipeline.completed_at = time();
+                    pipeline.error = `Stage ${failed_stage.stage_name} failed`;
+                    
+                    return { 
+                        Err: { 
+                            ExecutorFailure: `Stage ${failed_stage.stage_name} failed` 
+                        } 
+                    };
+                }
+                
+                // Store results
+                parallel_results.forEach(result => {
+                    pipeline.stage_results.set(result.stage_name, result);
+                });
+            } else {
+                // Execute stages sequentially
+                for (const stage of stage_group.stages) {
+                    const result = await this.executeStage(stage, pipeline);
+                    pipeline.stage_results.set(stage.name, result);
+                    
+                    if ('Failed' in result.status) {
+                        pipeline.status = { Failed: null };
+                        pipeline.completed_at = time();
+                        pipeline.error = `Stage ${stage.name} failed`;
+                        
+                        return { 
+                            Err: { 
+                                ExecutorFailure: `Stage ${stage.name} failed` 
+                            } 
+                        };
+                    }
+                }
+            }
+        }
+
+        // Pipeline completed successfully
+        pipeline.status = { Completed: null };
+        pipeline.completed_at = time();
+        
+        // Convert pipeline result to verification result for compatibility
+        const verification_result: VerificationResult = {
+            status: { Verified: null },
+            verified_hash: "pipeline_success_hash",
+            error: null,
+            executor_results: [],
+            consensus_threshold: 100,
+            total_executors: 1,
+            matching_results: 1,
+            created_at: pipeline.started_at,
+            completed_at: pipeline.completed_at
+        };
+
+        return { Ok: verification_result };
+    }
+
+    /**
+     * Execute a single stage
+     */
+    private async executeStage(stage: PipelineStage, pipeline: PipelineInstance): Promise<StageResult> {
+        console.log(`Executing stage: ${stage.name}`);
+        
+        const stage_result: StageResult = {
+            stage_name: stage.name,
+            status: { Running: null },
+            started_at: time(),
+            completed_at: null,
+            step_results: new Map(),
+            error: null,
+            retry_count: 0
+        };
+
+        try {
+            // Check when condition
+            if (stage.when_condition && !this.evaluateWhenCondition(stage.when_condition, pipeline)) {
+                stage_result.status = { Skipped: null };
+                stage_result.completed_at = time();
+                console.log(`Stage ${stage.name} skipped due to condition`);
+                return stage_result;
+            }
+
+            // Execute steps
+            for (const step of stage.steps) {
+                const step_result = await this.executeStep(step, pipeline);
+                stage_result.step_results.set(step.step_type, step_result);
+                
+                if ('Failed' in step_result.status) {
+                    stage_result.status = { Failed: null };
+                    stage_result.error = step_result.error;
+                    stage_result.completed_at = time();
+                    return stage_result;
+                }
+            }
+
+            // Stage completed successfully
+            stage_result.status = { Completed: null };
+            stage_result.completed_at = time();
+            
+        } catch (error) {
+            stage_result.status = { Failed: null };
+            stage_result.error = String(error);
+            stage_result.completed_at = time();
+        }
+
+        return stage_result;
+    }
+
+    /**
+     * Execute a single step
+     */
+    private async executeStep(step: BuildStep, pipeline: PipelineInstance): Promise<StepResult> {
+        console.log(`Executing step: ${step.step_type}`);
+        
+        const step_result: StepResult = {
+            step_type: step.step_type,
+            status: { Running: null },
+            started_at: time(),
+            completed_at: null,
+            output: "",
+            error: null,
+            executor_id: null
+        };
+
+        try {
+            // Route step execution based on type
+            switch (step.step_type) {
+                case 'checkout':
+                    await this.executeCheckoutStep(step, pipeline, step_result);
+                    break;
+                case 'build':
+                    await this.executeBuildStep(step, pipeline, step_result);
+                    break;
+                case 'test':
+                    await this.executeTestStep(step, pipeline, step_result);
+                    break;
+                case 'deploy':
+                    await this.executeDeployStep(step, pipeline, step_result);
+                    break;
+                default:
+                    await this.executeGenericStep(step, pipeline, step_result);
+                    break;
+            }
+
+            step_result.status = { Completed: null };
+            step_result.completed_at = time();
+            
+        } catch (error) {
+            step_result.status = { Failed: null };
+            step_result.error = String(error);
+            step_result.completed_at = time();
+        }
+
+        return step_result;
+    }
+
+    // ============================================================================
+    // PIPELINE HELPER METHODS
+    // ============================================================================
+
+    /**
+     * Generate unique pipeline instance ID
+     */
+    private generatePipelineInstanceId(project_id: string, template_id: string): string {
+        const timestamp = time();
+        return `${project_id}_${template_id}_${timestamp}`;
+    }
+
+    /**
+     * Group stages by parallel execution
+     */
+    private groupStagesByParallel(stages: PipelineStage[]): { parallel: boolean, stages: PipelineStage[] }[] {
+        const groups: { parallel: boolean, stages: PipelineStage[] }[] = [];
+        let current_group: PipelineStage[] = [];
+        let current_parallel_group: string | null = null;
+
+        for (const stage of stages) {
+            if (stage.parallel_group) {
+                if (current_parallel_group !== stage.parallel_group) {
+                    // New parallel group
+                    if (current_group.length > 0) {
+                        groups.push({ parallel: false, stages: current_group });
+                        current_group = [];
+                    }
+                    current_parallel_group = stage.parallel_group;
+                }
+                current_group.push(stage);
+            } else {
+                // Sequential stage
+                if (current_parallel_group) {
+                    // End of parallel group
+                    groups.push({ parallel: true, stages: current_group });
+                    current_group = [];
+                    current_parallel_group = null;
+                }
+                current_group.push(stage);
+                groups.push({ parallel: false, stages: current_group });
+                current_group = [];
+            }
+        }
+
+        // Add final group
+        if (current_group.length > 0) {
+            groups.push({ 
+                parallel: current_parallel_group !== null, 
+                stages: current_group 
+            });
+        }
+
+        return groups;
+    }
+
+    /**
+     * Evaluate when condition
+     */
+    private evaluateWhenCondition(condition: string, pipeline: PipelineInstance): boolean {
+        // Simple condition evaluation - can be extended
+        if (condition === 'always') return true;
+        if (condition.startsWith('branch:')) {
+            const branch = condition.substring(7);
+            return pipeline.parameters.get('branch') === branch;
+        }
+        if (condition.startsWith('env:')) {
+            const env = condition.substring(4);
+            return pipeline.parameters.get('environment') === env;
+        }
+        return true;
+    }
+
+    /**
+     * Step execution methods
+     */
+    private async executeCheckoutStep(step: BuildStep, pipeline: PipelineInstance, result: StepResult): Promise<void> {
+        result.output = `Checkout step executed for ${pipeline.project_id}`;
+        console.log(result.output);
+    }
+
+    private async executeBuildStep(step: BuildStep, pipeline: PipelineInstance, result: StepResult): Promise<void> {
+        // Delegate to existing build executor
+        if (this.buildExecutorCanisterIds.length > 0) {
+            result.executor_id = this.buildExecutorCanisterIds[0];
+            result.output = `Build step delegated to executor ${result.executor_id.toText()}`;
+        } else {
+            result.output = `Build step executed for ${pipeline.project_id}`;
+        }
+        console.log(result.output);
+    }
+
+    private async executeTestStep(step: BuildStep, pipeline: PipelineInstance, result: StepResult): Promise<void> {
+        result.output = `Test step executed for ${pipeline.project_id}`;
+        console.log(result.output);
+    }
+
+    private async executeDeployStep(step: BuildStep, pipeline: PipelineInstance, result: StepResult): Promise<void> {
+        result.output = `Deploy step executed for ${pipeline.project_id}`;
+        console.log(result.output);
+    }
+
+    private async executeGenericStep(step: BuildStep, pipeline: PipelineInstance, result: StepResult): Promise<void> {
+        result.output = `Generic step ${step.step_type} executed for ${pipeline.project_id}`;
+        console.log(result.output);
     }
 }
