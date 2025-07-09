@@ -5,15 +5,11 @@ import {
     init, 
     postUpgrade,
     StableBTreeMap,
-    Principal
+    Principal,
+    time,
+    msgCaller,
+    trap
 } from 'azle';
-
-// Global ic object is available in Azle runtime
-declare const ic: {
-    time(): bigint;
-    caller(): Principal;
-    print(message: string): void;
-};
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -103,9 +99,9 @@ export default class BuildInstructionsCanister {
      */
     @init([])
     init(): void {
-        this.deployedAt = ic.time();
-        ic.print(`Build Instructions Canister initialized at ${this.deployedAt}`);
-        ic.print(`Admin principal: ${this.adminPrincipal.toText()}`);
+        this.deployedAt = time();
+        console.log(`Build Instructions Canister initialized at ${this.deployedAt}`);
+        console.log(`Admin principal: ${this.adminPrincipal.toText()}`);
     }
 
     /**
@@ -113,9 +109,9 @@ export default class BuildInstructionsCanister {
      */
     @postUpgrade([])
     postUpgrade(): void {
-        ic.print(`Build Instructions Canister upgraded at ${ic.time()}`);
-        ic.print(`Current version: ${this.canisterVersion}`);
-        ic.print(`Total instructions stored: ${this.buildInstructions.len()}`);
+        console.log(`Build Instructions Canister upgraded at ${time()}`);
+        console.log(`Current version: ${this.canisterVersion}`);
+        console.log(`Total instructions stored: ${this.buildInstructions.len()}`);
     }
 
     // ============================================================================
@@ -220,7 +216,7 @@ export default class BuildInstructionsCanister {
         instructionSet: string
     ): VoidResult {
         try {
-            const caller = ic.caller();
+            const caller = msgCaller();
             
             // Check authorization
             if (!this.isAuthorized(caller)) {
@@ -242,7 +238,7 @@ export default class BuildInstructionsCanister {
             }
 
             const key = this.generateKey(projectId, version);
-            const currentTime = ic.time();
+            const currentTime = time();
             
             // Check if instructions already exist
             const existingInstructions = this.buildInstructions.get(key);
@@ -259,12 +255,12 @@ export default class BuildInstructionsCanister {
             // Store the instructions
             this.buildInstructions.insert(key, instructions);
 
-            ic.print(`Instructions ${existingInstructions ? 'updated' : 'added'} for ${projectId}@${version}`);
+            console.log(`Instructions ${existingInstructions ? 'updated' : 'added'} for ${projectId}@${version}`);
             
             return { Ok: null };
 
         } catch (error) {
-            ic.print(`Error in addInstructions: ${error}`);
+            console.log(`Error in addInstructions: ${error}`);
             return { 
                 Err: { 
                     InternalError: `Failed to add instructions: ${error}` 
@@ -302,7 +298,7 @@ export default class BuildInstructionsCanister {
             return { Ok: instructions };
 
         } catch (error) {
-            ic.print(`Error in getInstructions: ${error}`);
+            console.log(`Error in getInstructions: ${error}`);
             return { 
                 Err: { 
                     InternalError: `Failed to retrieve instructions: ${error}` 
@@ -327,7 +323,7 @@ export default class BuildInstructionsCanister {
             return Array.from(projects).sort();
 
         } catch (error) {
-            ic.print(`Error in listProjects: ${error}`);
+            console.log(`Error in listProjects: ${error}`);
             return [];
         }
     }
@@ -355,7 +351,7 @@ export default class BuildInstructionsCanister {
             return versions.sort();
 
         } catch (error) {
-            ic.print(`Error in listVersions: ${error}`);
+            console.log(`Error in listVersions: ${error}`);
             return [];
         }
     }
@@ -367,7 +363,7 @@ export default class BuildInstructionsCanister {
     @update([IDL.Text, IDL.Text], VoidResult)
     removeInstructions(projectId: string, version: string): VoidResult {
         try {
-            const caller = ic.caller();
+            const caller = msgCaller();
             
             // Check authorization
             if (!this.isAuthorized(caller)) {
@@ -398,11 +394,11 @@ export default class BuildInstructionsCanister {
                 };
             }
 
-            ic.print(`Instructions removed for ${projectId}@${version}`);
+            console.log(`Instructions removed for ${projectId}@${version}`);
             return { Ok: null };
 
         } catch (error) {
-            ic.print(`Error in removeInstructions: ${error}`);
+            console.log(`Error in removeInstructions: ${error}`);
             return { 
                 Err: { 
                     InternalError: `Failed to remove instructions: ${error}` 
@@ -440,7 +436,7 @@ export default class BuildInstructionsCanister {
     @update([IDL.Principal], VoidResult)
     updateAdmin(newAdmin: Principal): VoidResult {
         try {
-            const caller = ic.caller();
+            const caller = msgCaller();
             
             // Check authorization
             if (!this.isAuthorized(caller)) {
@@ -454,12 +450,12 @@ export default class BuildInstructionsCanister {
             const oldAdmin = this.adminPrincipal;
             this.adminPrincipal = newAdmin;
             
-            ic.print(`Admin principal updated from ${oldAdmin.toText()} to ${newAdmin.toText()}`);
+            console.log(`Admin principal updated from ${oldAdmin.toText()} to ${newAdmin.toText()}`);
             
             return { Ok: null };
 
         } catch (error) {
-            ic.print(`Error in updateAdmin: ${error}`);
+            console.log(`Error in updateAdmin: ${error}`);
             return { 
                 Err: { 
                     InternalError: `Failed to update admin: ${error}` 
@@ -502,7 +498,7 @@ export default class BuildInstructionsCanister {
             return allInstructions.slice(startIndex, endIndex);
             
         } catch (error) {
-            ic.print(`Error in getAllInstructions: ${error}`);
+            console.log(`Error in getAllInstructions: ${error}`);
             return [];
         }
     }
@@ -532,7 +528,7 @@ export default class BuildInstructionsCanister {
             return instructions;
             
         } catch (error) {
-            ic.print(`Error in getInstructionsByProject: ${error}`);
+            console.log(`Error in getInstructionsByProject: ${error}`);
             return [];
         }
     }
@@ -551,7 +547,7 @@ export default class BuildInstructionsCanister {
             return this.buildInstructions.containsKey(key);
             
         } catch (error) {
-            ic.print(`Error in instructionsExist: ${error}`);
+            console.log(`Error in instructionsExist: ${error}`);
             return false;
         }
     }
@@ -573,7 +569,7 @@ export default class BuildInstructionsCanister {
         }>
     ): VoidResult[] {
         try {
-            const caller = ic.caller();
+            const caller = msgCaller();
             
             // Check authorization
             if (!this.isAuthorized(caller)) {
@@ -596,7 +592,7 @@ export default class BuildInstructionsCanister {
             }
 
             const results: VoidResult[] = [];
-            const currentTime = ic.time();
+            const currentTime = time();
 
             for (const instruction of instructionsList) {
                 // Validate each instruction
@@ -640,11 +636,11 @@ export default class BuildInstructionsCanister {
                 }
             }
 
-            ic.print(`Batch operation completed: ${results.filter(r => 'Ok' in r).length}/${instructionsList.length} successful`);
+            console.log(`Batch operation completed: ${results.filter(r => 'Ok' in r).length}/${instructionsList.length} successful`);
             return results;
 
         } catch (error) {
-            ic.print(`Error in addMultipleInstructions: ${error}`);
+            console.log(`Error in addMultipleInstructions: ${error}`);
             const internalError = { 
                 Err: { 
                     InternalError: `Batch operation failed: ${error}` 
@@ -669,8 +665,8 @@ export default class BuildInstructionsCanister {
     getStatistics(): {
         total_instructions: number;
         total_projects: number;
-        oldest_instruction: bigint | undefined;
-        newest_instruction: bigint | undefined;
+        oldest_instruction: [] | [bigint];
+        newest_instruction: [] | [bigint];
         canister_version: string;
         deployed_at: bigint;
         admin_principal: Principal;
@@ -696,20 +692,20 @@ export default class BuildInstructionsCanister {
             return {
                 total_instructions: this.buildInstructions.len(),
                 total_projects: projects.size,
-                oldest_instruction: oldestTime,
-                newest_instruction: newestTime,
+                oldest_instruction: oldestTime ? [oldestTime] : [],
+                newest_instruction: newestTime ? [newestTime] : [],
                 canister_version: this.canisterVersion,
                 deployed_at: this.deployedAt,
                 admin_principal: this.adminPrincipal
             };
             
         } catch (error) {
-            ic.print(`Error in getStatistics: ${error}`);
+            console.log(`Error in getStatistics: ${error}`);
             return {
                 total_instructions: 0,
                 total_projects: 0,
-                oldest_instruction: undefined,
-                newest_instruction: undefined,
+                oldest_instruction: [],
+                newest_instruction: [],
                 canister_version: this.canisterVersion,
                 deployed_at: this.deployedAt,
                 admin_principal: this.adminPrincipal
