@@ -56,3 +56,8 @@
     "not dead"
   ]
 }
+{
+  "scripts": {
+    "build": "[my-framework] build --output public"
+  }
+}
