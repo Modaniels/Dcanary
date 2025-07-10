@@ -304,7 +304,7 @@
         </div>
         
         <!-- Content -->
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 min-w-0">
             <div class="text-center">
                 <h1 class="text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
                     Welcome to <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-300">Dcanary</span>
@@ -631,8 +631,8 @@
                                         </div>
                                         Request Verification
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                        <code class="text-slate-200">mody request-verification --project-id "my-project" --version "1.0.0"</code>
+                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                        <code class="text-slate-200 whitespace-pre min-w-0">mody request-verification --project-id "my-project" --version "1.0.0"</code>
                                         <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard(this)" title="Copy to clipboard">
                                             <i class="fas fa-copy"></i>
                                         </button>
@@ -647,8 +647,8 @@
                                         </div>
                                         Setup SCM Integration
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                        <code class="text-slate-200">mody scm register "my-project" --provider github --owner "username" --repo "repo-name"</code>
+                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                        <code class="text-slate-200 whitespace-pre min-w-0">mody scm register "my-project" --provider github --owner "username" --repo "repo-name"</code>
                                         <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard(this)" title="Copy to clipboard">
                                             <i class="fas fa-copy"></i>
                                         </button>
@@ -665,8 +665,8 @@
                                         </div>
                                         Get Status
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                        <code class="text-slate-200">mody get-status --project-id "my-project"</code>
+                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                        <code class="text-slate-200 whitespace-pre min-w-0">mody get-status --project-id "my-project"</code>
                                         <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard(this)" title="Copy to clipboard">
                                             <i class="fas fa-copy"></i>
                                         </button>
@@ -681,8 +681,8 @@
                                         </div>
                                         Configure CLI
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                        <code class="text-slate-200">mody configure --network "local" --identity "default"</code>
+                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                        <code class="text-slate-200 whitespace-pre min-w-0">mody configure --network "local" --identity "default"</code>
                                         <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard(this)" title="Copy to clipboard">
                                             <i class="fas fa-copy"></i>
                                         </button>
@@ -697,8 +697,8 @@
                                         </div>
                                         Version Info
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                        <code class="text-slate-200">mody version</code>
+                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                        <code class="text-slate-200 whitespace-pre min-w-0">mody version</code>
                                         <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard(this)" title="Copy to clipboard">
                                             <i class="fas fa-copy"></i>
                                         </button>
@@ -709,7 +709,7 @@
                         </div>
                         
                         <div class="mt-12 p-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm rounded-xl border border-blue-400/30">
-                            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-4 min-w-0">
                                 <div>
                                     <h4 class="text-slate-100 mb-2 font-semibold">Need more detailed documentation?</h4>
                                     <p class="text-slate-300">Explore our comprehensive documentation for API references, advanced configuration, troubleshooting, and examples.</p>
@@ -737,7 +737,7 @@
                 </p>
             </div>
             
-            <div class="grid lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 min-w-0">
                 <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-sm border border-blue-400/30 p-8 rounded-2xl">
                     <h3 class="text-2xl font-bold text-slate-100 mb-6">TypeScript Web Application</h3>                        <div class="space-y-6">
                             <div class="p-5 bg-slate-800/30 rounded-lg">
@@ -745,8 +745,8 @@
                                     <div class="w-8 h-8 bg-slate-700/70 rounded-full flex items-center justify-center mr-3 text-slate-200 text-sm font-bold">1</div>
                                     Setup Project
                                 </h4>
-                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                    <code class="text-slate-200">mody add-instructions --project-id "my-webapp" --version "1.0.0" --file "./build.sh"</code>
+                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                    <code class="text-slate-200 whitespace-pre min-w-0">mody add-instructions --project-id "my-webapp" --version "1.0.0" --file "./build.sh"</code>
                                 </div>
                             </div>
                             
@@ -755,8 +755,8 @@
                                     <div class="w-8 h-8 bg-slate-700/70 rounded-full flex items-center justify-center mr-3 text-slate-200 text-sm font-bold">2</div>
                                     Register GitHub Repository
                                 </h4>
-                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                    <code class="text-slate-200">mody scm register "my-webapp" --provider github --owner "myuser" --repo "webapp"</code>
+                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                    <code class="text-slate-200 whitespace-pre min-w-0">mody scm register "my-webapp" --provider github --owner "myuser" --repo "webapp"</code>
                                 </div>
                             </div>
                             
@@ -765,8 +765,8 @@
                                     <div class="w-8 h-8 bg-slate-700/70 rounded-full flex items-center justify-center mr-3 text-slate-200 text-sm font-bold">3</div>
                                     Request Verification
                                 </h4>
-                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                    <code class="text-slate-200">mody request-verification --project-id "my-webapp" --version "1.0.0" --executors 3</code>
+                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                    <code class="text-slate-200 whitespace-pre min-w-0">mody request-verification --project-id "my-webapp" --version "1.0.0" --executors 3</code>
                                 </div>
                             </div>
                         </div>
@@ -779,8 +779,8 @@
                                     <div class="w-8 h-8 bg-slate-700/70 rounded-full flex items-center justify-center mr-3 text-slate-200 text-sm font-bold">1</div>
                                     Create Build Script
                                 </h4>
-                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                    <code class="text-slate-200">#!/bin/bash<br/>npm ci<br/>npm run test<br/>npm run build<br/>docker build -t api-server .</code>
+                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                    <code class="text-slate-200 whitespace-pre min-w-0">#!/bin/bash<br/>npm ci<br/>npm run test<br/>npm run build<br/>docker build -t api-server .</code>
                                 </div>
                             </div>
                             
@@ -789,8 +789,8 @@
                                     <div class="w-8 h-8 bg-slate-700/70 rounded-full flex items-center justify-center mr-3 text-slate-200 text-sm font-bold">2</div>
                                     Add Instructions
                                 </h4>
-                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                    <code class="text-slate-200">mody add-instructions --project-id "api-server" --version "2.1.0" --file "./api-build.sh"</code>
+                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                    <code class="text-slate-200 whitespace-pre min-w-0">mody add-instructions --project-id "api-server" --version "2.1.0" --file "./api-build.sh"</code>
                                 </div>
                             </div>
                             
@@ -799,8 +799,8 @@
                                     <div class="w-8 h-8 bg-slate-700/70 rounded-full flex items-center justify-center mr-3 text-slate-200 text-sm font-bold">3</div>
                                     Setup Webhook
                                 </h4>
-                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                    <code class="text-slate-200">mody webhook configure --url "https://canister.ic0.app/webhook" --secret "secure-secret"</code>
+                                <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                    <code class="text-slate-200 whitespace-pre min-w-0">mody webhook configure --url "https://canister.ic0.app/webhook" --secret "secure-secret"</code>
                                 </div>
                             </div>
                         </div>
@@ -809,7 +809,7 @@
             
             <div class="mt-12 bg-gradient-to-br from-slate-800/40 to-slate-700/40 backdrop-blur-sm border border-slate-600/30 p-8 rounded-2xl">
                 <h3 class="text-2xl font-bold text-slate-100 mb-8">Complete Workflow Example</h3>
-                <div class="grid md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 min-w-0">
                     <div>
                         <h4 class="text-slate-100 mb-6 text-lg">Developer Workflow</h4>
                         <div class="space-y-4">
@@ -877,7 +877,7 @@
                 </p>
             </div>
             
-            <div class="grid lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 min-w-0">
                 <div class="text-center">
                     <div class="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-heart text-white text-2xl"></i>
@@ -927,7 +927,7 @@
         <div class="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800"></div>
         <div class="relative z-10 py-12 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 min-w-0">
                 <div>
                     <div class="flex items-center mb-4">
                         <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
