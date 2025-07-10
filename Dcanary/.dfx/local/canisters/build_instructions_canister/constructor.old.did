@@ -1,0 +1,109 @@
+service : {
+  addInstructions : (text, text, text) -> (
+      variant {
+        Ok;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          InternalError : text;
+        };
+      },
+    );
+  addMultipleInstructions : (
+      vec record { version : text; instruction_set : text; project_id : text },
+    ) -> (
+      vec variant {
+        Ok;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          InternalError : text;
+        };
+      },
+    );
+  getAllInstructions : (opt nat32, opt nat32) -> (
+      vec record {
+        updated_at : nat64;
+        created_at : nat64;
+        created_by : principal;
+        version : text;
+        instruction_set : text;
+        project_id : text;
+      },
+    ) query;
+  getCanisterInfo : () -> (
+      record {
+        total_instructions : nat32;
+        deployed_at : nat64;
+        version : text;
+        admin_principal : principal;
+      },
+    ) query;
+  getInstructions : (text, text) -> (
+      variant {
+        Ok : record {
+          updated_at : nat64;
+          created_at : nat64;
+          created_by : principal;
+          version : text;
+          instruction_set : text;
+          project_id : text;
+        };
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          InternalError : text;
+        };
+      },
+    ) query;
+  getInstructionsByProject : (text) -> (
+      vec record {
+        updated_at : nat64;
+        created_at : nat64;
+        created_by : principal;
+        version : text;
+        instruction_set : text;
+        project_id : text;
+      },
+    ) query;
+  getStatistics : () -> (
+      record {
+        oldest_instruction : opt nat64;
+        newest_instruction : opt nat64;
+        canister_version : text;
+        total_instructions : nat32;
+        deployed_at : nat64;
+        total_projects : nat32;
+        admin_principal : principal;
+      },
+    ) query;
+  healthCheck : () -> (text) query;
+  instructionsExist : (text, text) -> (bool) query;
+  listProjects : () -> (vec text) query;
+  listVersions : (text) -> (vec text) query;
+  removeInstructions : (text, text) -> (
+      variant {
+        Ok;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          InternalError : text;
+        };
+      },
+    );
+  updateAdmin : (principal) -> (
+      variant {
+        Ok;
+        Err : variant {
+          InvalidInput : text;
+          NotFound : text;
+          Unauthorized : text;
+          InternalError : text;
+        };
+      },
+    );
+}
