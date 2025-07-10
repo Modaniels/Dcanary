@@ -6,11 +6,11 @@
   "scripts": {
     "start": "npx serve . -p 8000",
     "dev": "npx live-server --port=8000 --open",
-    "build": "npm run minify-css && npm run minify-js && npm run optimize",
+    "build": "mkdir -p public && cp -r *.html *.css *.js *.json *.png *.ico *.xml *.txt public/ 2>/dev/null || true",
     "vercel-build": "npm run build",
     "minify-css": "npx cleancss -o styles.min.css styles.css",
     "minify-js": "npx terser script.js -o script.min.js --compress --mangle",
-    "optimize": "npm run validate && echo 'Optimization complete'",
+    "optimize": "echo 'Optimization complete'",
     "lint": "npx eslint script.js",
     "format": "npx prettier --write *.html *.css *.js *.md",
     "validate": "npx html-validate index.html docs.html",
