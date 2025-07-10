@@ -1,6 +1,39 @@
 // Example pipeline template for DCanary Phase 1 implementation
 
-import { PipelineTemplate } from './src/verification_canister';
+// Define the types locally since they're not exported yet
+type PipelineTemplate = {
+    template_id: string;
+    name: string;
+    description: string;
+    parameters: Map<string, ParameterDefinition>;
+    stages: PipelineStage[];
+    default_values: Map<string, string>;
+    required_capabilities: string[];
+};
+
+type ParameterDefinition = {
+    name: string;
+    param_type: string;
+    default_value: string | null;
+    description: string;
+    required: boolean;
+};
+
+type PipelineStage = {
+    name: string;
+    steps: BuildStep[];
+    parallel_group: string | null;
+    when_condition: string | null;
+    timeout_minutes: bigint;
+    retry_count: number;
+    post_actions: string[];
+};
+
+type BuildStep = {
+    step_type: string;
+    configuration: Map<string, string>;
+    timeout_seconds: bigint;
+};
 
 /**
  * Example TypeScript Web Application Pipeline Template

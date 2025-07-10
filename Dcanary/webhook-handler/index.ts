@@ -8,10 +8,10 @@
  * Deploy this as a serverless function or container service.
  */
 
-import express from 'express';
-import crypto from 'crypto';
+import express, { Request, Response } from 'express';
 import { Actor, HttpAgent } from '@dfinity/agent';
 import { Principal } from '@dfinity/principal';
+import { createHash } from 'crypto';
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -213,17 +213,17 @@ app.post('/webhook/github', async (req, res) => {
 
         const result = await webhookActor.handleGitHubWebhook(signature, payload, repositoryName);
 
-        if ('Ok' in result) {
-            console.log(`Webhook processed successfully: ${result.Ok.id}`);
+        if ('Ok' in (result as any)) {
+            console.log(`Webhook processed successfully: ${(result as any).Ok.id}`);
             res.status(200).json({ 
                 success: true, 
-                trigger_id: result.Ok.id,
-                project_id: result.Ok.project_id,
-                commit_sha: result.Ok.commit_sha
+                trigger_id: (result as any).Ok.id,
+                project_id: (result as any).Ok.project_id,
+                commit_sha: (result as any).Ok.commit_sha
             });
         } else {
-            const errorType = Object.keys(result.Err)[0];
-            const errorMessage = Object.values(result.Err)[0] as string;
+            const errorType = Object.keys((result as any).Err)[0];
+            const errorMessage = Object.values((result as any).Err)[0] as string;
             console.error(`Webhook processing failed: ${errorType} - ${errorMessage}`);
             res.status(400).json({ error: `${errorType}: ${errorMessage}` });
         }
@@ -249,17 +249,17 @@ app.post('/webhook/gitlab', async (req, res) => {
 
         const result = await webhookActor.handleGitLabWebhook(token, payload, repositoryPath);
 
-        if ('Ok' in result) {
-            console.log(`Webhook processed successfully: ${result.Ok.id}`);
+        if ('Ok' in (result as any)) {
+            console.log(`Webhook processed successfully: ${(result as any).Ok.id}`);
             res.status(200).json({ 
                 success: true, 
-                trigger_id: result.Ok.id,
-                project_id: result.Ok.project_id,
-                commit_sha: result.Ok.commit_sha
+                trigger_id: (result as any).Ok.id,
+                project_id: (result as any).Ok.project_id,
+                commit_sha: (result as any).Ok.commit_sha
             });
         } else {
-            const errorType = Object.keys(result.Err)[0];
-            const errorMessage = Object.values(result.Err)[0] as string;
+            const errorType = Object.keys((result as any).Err)[0];
+            const errorMessage = Object.values((result as any).Err)[0] as string;
             console.error(`Webhook processing failed: ${errorType} - ${errorMessage}`);
             res.status(400).json({ error: `${errorType}: ${errorMessage}` });
         }
@@ -287,3 +287,67 @@ app.listen(PORT, () => {
 });
 
 export default app;
+
+// Type definitions for webhook payloads
+interface GitHubWebhookPayload {
+    action?: string;
+    ref?: string;
+    repository?: {
+        id: number;
+        name: string;
+        full_name: string;
+        html_url: string;
+        clone_url: string;
+        ssh_url: string;
+        default_branch: string;
+    };
+    head_commit?: {
+        id: string;
+        message: string;
+        timestamp: string;
+        author: {
+            name: string;
+            email: string;
+            username: string;
+        };
+        committer: {
+            name: string;
+            email: string;
+            username: string;
+        };
+    };
+    pusher?: {
+        name: string;
+        email: string;
+    };
+    sender?: {
+        login: string;
+        id: number;
+        html_url: string;
+    };
+}
+
+interface GitLabWebhookPayload {
+    object_kind: string;
+    ref?: string;
+    project?: {
+        id: number;
+        name: string;
+        path_with_namespace: string;
+        web_url: string;
+        http_url: string;
+        ssh_url: string;
+        default_branch: string;
+    };
+    commits?: Array<{
+        id: string;
+        message: string;
+        timestamp: string;
+        author: {
+            name: string;
+            email: string;
+        };
+    }>;
+    user_name?: string;
+    user_email?: string;
+}
