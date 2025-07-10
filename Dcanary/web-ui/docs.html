@@ -27,6 +27,42 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles-minimal.css">
     <style>
+        /* Responsive grid fix for mobile */
+        @media (max-width: 768px) {
+            .grid.md\\:grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+            .grid.md\\:grid-cols-3 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        
+        /* Text overflow fixes */
+        pre {
+            overflow-x: auto !important;
+            max-width: 100% !important;
+        }
+        
+        pre code {
+            white-space: pre !important;
+            word-wrap: break-word;
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+        
+        /* Long text handling */
+        .bg-gray-900 pre {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        /* Ensure container responsiveness */
+        .docs-section {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+    </style>
+    <style>
         /* Ensure all code blocks are properly contained and scrollable */
         pre {
             overflow-x: auto !important;
@@ -2228,17 +2264,17 @@ mody pipeline run typescript-webapp my-project \
                     </div>
                 </section>
 
-                <section id="<section id="multi-executor" class="mb-16 docs-section">" class="mb-16 docs-section">
+                <section id="multi-executor" class="mb-16 docs-section">
                     <h2 class="text-3xl font-bold text-slate-100 mb-6">Multi-Executor Setup</h2>
                     <p class="text-slate-300 mb-8">Configure and manage multiple build executors for enhanced reliability and performance.</p>
                     
-                    <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         <div class="bg-slate-800 p-6 rounded-xl shadow-md border border-slate-700 hover:shadow-lg transition-shadow duration-300">
                             <h3 class="text-lg font-semibold text-slate-100 mb-4">Executor Configuration</h3>
                             <div class="space-y-4">
                                 <div>
-                                    <h4 class="font-medium text-slate-100">Register New Executor</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code>dcanary executor register \
+                                    <h4 class="font-medium text-slate-100 mb-2">Register New Executor</h4>
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs">dcanary executor register \
   --id executor-01 \
   --type docker \
   --cpu-cores 8 \
@@ -2246,8 +2282,8 @@ mody pipeline run typescript-webapp my-project \
   --location us-west-1</code></pre>
                                 </div>
                                 <div>
-                                    <h4 class="font-medium text-slate-100">Set Executor Preferences</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code>dcanary executor configure \
+                                    <h4 class="font-medium text-slate-100 mb-2">Set Executor Preferences</h4>
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs">dcanary executor configure \
   --preferred-executors executor-01,executor-02 \
   --fallback-pool shared-pool \
   --min-consensus 3</code></pre>
@@ -2259,7 +2295,7 @@ mody pipeline run typescript-webapp my-project \
                             <h3 class="text-lg font-semibold text-slate-100 mb-4">Load Balancing</h3>
                             <div class="space-y-4">
                                 <div>
-                                    <h4 class="font-medium text-slate-100">Distribution Strategies</h4>
+                                    <h4 class="font-medium text-slate-100 mb-2">Distribution Strategies</h4>
                                     <ul class="text-sm text-slate-300 space-y-1">
                                         <li>• Round-robin assignment</li>
                                         <li>• Resource-based allocation</li>
@@ -2268,8 +2304,8 @@ mody pipeline run typescript-webapp my-project \
                                     </ul>
                                 </div>
                                 <div>
-                                    <h4 class="font-medium text-slate-100">Monitor Executor Health</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code>dcanary executor status
+                                    <h4 class="font-medium text-slate-100 mb-2">Monitor Executor Health</h4>
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs">dcanary executor status
 dcanary executor health-check --all
 dcanary executor metrics --executor-id executor-01</code></pre>
                                 </div>
@@ -2404,7 +2440,7 @@ dcanary metrics export --format grafana-dashboard</code></pre>
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-slate-100">Parallel Execution</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code># Optimize build parallelism
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs"># Optimize build parallelism
 dcanary config set build.parallel_steps true
 dcanary config set build.max_parallel_jobs 4</code></pre>
                                 </div>
@@ -2425,7 +2461,7 @@ dcanary config set build.max_parallel_jobs 4</code></pre>
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-slate-100">Scaling Configuration</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code># Auto-scaling configuration
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs"># Auto-scaling configuration
 dcanary config set autoscale.enabled true
 dcanary config set autoscale.min_executors 3
 dcanary config set autoscale.max_executors 20</code></pre>
@@ -2560,7 +2596,7 @@ dfx canister update-settings --add-controller $(dfx identity get-principal) --ne
                             <div class="space-y-4">
                                 <div>
                                     <h4 class="font-medium text-slate-100">Automated Backups</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code># Schedule automated backups
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs"># Schedule automated backups
 dcanary backup schedule \
   --frequency daily \
   --retention 30d \
@@ -2568,7 +2604,7 @@ dcanary backup schedule \
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-slate-100">Manual Backup</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code># Create manual backup
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs"># Create manual backup
 dcanary backup create \
   --name "pre-upgrade-$(date +%Y%m%d)" \
   --include-state \
@@ -2582,7 +2618,7 @@ dcanary backup create \
                             <div class="space-y-4">
                                 <div>
                                     <h4 class="font-medium text-slate-100">List Backups</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code># List available backups
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs"># List available backups
 dcanary backup list --sort-by date
 
 # Verify backup integrity
@@ -2590,7 +2626,7 @@ dcanary backup verify --name backup-20240710</code></pre>
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-slate-100">Restore from Backup</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code># Restore from backup
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs"># Restore from backup
 dcanary restore \
   --backup-name backup-20240710 \
   --confirm \
@@ -2622,17 +2658,17 @@ dcanary restore \
                             <div class="space-y-4">
                                 <div>
                                     <h4 class="font-medium text-slate-100">1. Check Current Version</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code>dcanary version
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs">dcanary version
 dcanary status --detailed</code></pre>
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-slate-100">2. Download Latest Version</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code>dcanary upgrade --check
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs">dcanary upgrade --check
 dcanary upgrade --download --version latest</code></pre>
                                 </div>
                                 <div>
                                     <h4 class="font-medium text-slate-100">3. Perform Upgrade</h4>
-                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm"><code>dcanary upgrade --apply --backup-first
+                                    <pre class="bg-gray-900 text-white p-3 rounded text-sm overflow-x-auto"><code class="whitespace-pre text-xs">dcanary upgrade --apply --backup-first
 dcanary status --verify</code></pre>
                                 </div>
                             </div>

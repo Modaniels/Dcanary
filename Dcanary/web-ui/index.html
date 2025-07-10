@@ -1,4 +1,11 @@
 <!DOCTYPE html>
+<html lang="en" class="overflow-x-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dcanary - Decentralized CI/CD Pipeline System powered by Internet Computer Protocol. Trustless, tamper-proof, and scalable build verification.">
+    <meta name="keywords" content="dcanary, decentralized, CI/CD, pipeline, Internet Computer, ICP, build verification, DevOps, blockchain">
+    <meta name="author" content="Daniel - Dcanary Creator">E html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -36,6 +43,51 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     
     <title>Dcanary - Decentralized CI/CD Pipeline System</title>
+    
+    <style>
+        /* Global overflow and container fixes */
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+        }
+        
+        /* Fix for code blocks and long text */
+        pre, code {
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            max-width: 100%;
+        }
+        
+        /* Ensure all containers respect viewport width */
+        .container, .max-w-7xl, .max-w-6xl, .max-w-4xl, .max-w-3xl, .max-w-2xl {
+            max-width: calc(100vw - 2rem) !important;
+        }
+        
+        /* Fix for grid items that might overflow */
+        .grid > * {
+            min-width: 0;
+            max-width: 100%;
+        }
+        
+        /* Fix for flex items */
+        .flex > * {
+            min-width: 0;
+        }
+        
+        /* Responsive font sizes for small screens */
+        @media (max-width: 640px) {
+            .text-4xl { font-size: 2rem; }
+            .text-3xl { font-size: 1.875rem; }
+            .text-2xl { font-size: 1.5rem; }
+            .text-xl { font-size: 1.25rem; }
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -124,7 +176,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-900 font-inter text-slate-100">
+<body class="bg-slate-900 font-inter text-slate-100 overflow-x-hidden">
     <!-- Navigation -->
     <nav class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-lg border-b border-slate-600/20 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -287,7 +339,7 @@
                 </p>
             </div>
             
-            <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-w-0">
                 <div class="order-2 md:order-1">
                     <div class="bg-gradient-to-r from-slate-700/50 to-slate-600/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-600/50">
                         <h3 class="text-2xl font-bold text-slate-100 mb-6">The Name Behind the System</h3>
@@ -351,7 +403,7 @@
                 </p>
             </div>
             
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-w-0">
                 <div class="bg-gradient-to-br from-slate-800/50 to-slate-700/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-600/50 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl">
                     <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-6">
                         <i class="fas fa-rocket text-white text-2xl"></i>
@@ -414,7 +466,7 @@
                 </p>
             </div>
             
-            <div class="grid lg:grid-cols-2 gap-12">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 min-w-0">
                 <div class="space-y-8">
                     <h3 class="text-2xl font-bold text-slate-100 mb-8">Prerequisites</h3>
                     <div class="space-y-6">
@@ -456,8 +508,8 @@
                                 <span class="bg-slate-700/70 text-slate-200 px-3 py-1 rounded-full text-sm mr-4 group-hover:bg-slate-600/70 transition-all duration-300">1</span>
                                 <span class="text-slate-200 font-medium">Clone the repository</span>
                             </div>
-                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                <code class="text-slate-200">git clone https://github.com/username/dcanary.git</code>
+                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                <code class="text-slate-200 whitespace-pre min-w-0">git clone https://github.com/username/dcanary.git</code>
                                 <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('git clone https://github.com/username/dcanary.git')" title="Copy to clipboard">
                                     <i class="fas fa-copy"></i>
                                 </button>
@@ -469,8 +521,8 @@
                                 <span class="bg-slate-700/70 text-slate-200 px-3 py-1 rounded-full text-sm mr-4 group-hover:bg-slate-600/70 transition-all duration-300">2</span>
                                 <span class="text-slate-200 font-medium">Navigate to directory</span>
                             </div>
-                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                <code class="text-slate-200">cd dcanary/Dcanary</code>
+                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                <code class="text-slate-200 whitespace-pre min-w-0">cd dcanary/Dcanary</code>
                                 <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('cd dcanary/Dcanary')" title="Copy to clipboard">
                                     <i class="fas fa-copy"></i>
                                 </button>
@@ -482,8 +534,8 @@
                                 <span class="bg-slate-700/70 text-slate-200 px-3 py-1 rounded-full text-sm mr-4 group-hover:bg-slate-600/70 transition-all duration-300">3</span>
                                 <span class="text-slate-200 font-medium">Install dependencies</span>
                             </div>
-                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50">
-                                <code class="text-slate-200">npm install</code>
+                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
+                                <code class="text-slate-200 whitespace-pre min-w-0">npm install</code>
                                 <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('npm install')" title="Copy to clipboard">
                                     <i class="fas fa-copy"></i>
                                 </button>
