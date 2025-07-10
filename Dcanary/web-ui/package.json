@@ -6,14 +6,17 @@
   "scripts": {
     "start": "npx serve . -p 8000",
     "dev": "npx live-server --port=8000 --open",
-    "build": "npm run minify-css && npm run minify-js",
+    "build": "npm run minify-css && npm run minify-js && npm run optimize",
+    "vercel-build": "npm run build",
     "minify-css": "npx cleancss -o styles.min.css styles.css",
     "minify-js": "npx terser script.js -o script.min.js --compress --mangle",
+    "optimize": "npm run validate && echo 'Optimization complete'",
     "lint": "npx eslint script.js",
     "format": "npx prettier --write *.html *.css *.js *.md",
-    "validate": "npx html-validate index.html",
+    "validate": "npx html-validate index.html docs.html",
     "test": "npm run lint && npm run validate",
-    "deploy": "npm run build && echo 'Ready for deployment'",
+    "deploy": "vercel --prod",
+    "preview": "vercel",
     "serve": "python -m http.server 8000"
   },
   "keywords": [
@@ -25,7 +28,11 @@
     "blockchain",
     "pipeline",
     "documentation",
-    "web-ui"
+    "web-ui",
+    "vercel",
+    "static-site",
+    "responsive",
+    "tailwindcss"
   ],
   "author": "Daniel",
   "license": "MIT",
@@ -36,7 +43,8 @@
     "live-server": "^1.2.2",
     "prettier": "^3.1.1",
     "serve": "^14.2.1",
-    "terser": "^5.26.0"
+    "terser": "^5.26.0",
+    "vercel": "^32.0.0"
   },
   "dependencies": {},
   "repository": {
@@ -56,8 +64,5 @@
     "not dead"
   ]
 }
-{
-  "scripts": {
-    "build": "[my-framework] build --output public"
-  }
-}
+
+  
