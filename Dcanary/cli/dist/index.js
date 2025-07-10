@@ -7,6 +7,8 @@ const request_verification_1 = require("./commands/request-verification");
 const get_status_1 = require("./commands/get-status");
 const configure_1 = require("./commands/configure");
 const version_1 = require("./commands/version");
+const scm_integration_1 = require("./commands/scm-integration");
+const webhook_1 = require("./commands/webhook");
 const ui_1 = require("./utils/ui");
 const logger_1 = require("./utils/logger");
 const config_1 = require("./utils/config");
@@ -44,6 +46,8 @@ function main() {
     program.addCommand((0, get_status_1.createGetStatusCommand)());
     program.addCommand((0, configure_1.createConfigureCommand)());
     program.addCommand((0, version_1.createVersionCommand)());
+    program.addCommand((0, scm_integration_1.createSCMIntegrationCommand)());
+    program.addCommand((0, webhook_1.createWebhookCommand)());
     // Help customization
     program.configureHelp({
         sortSubcommands: true,

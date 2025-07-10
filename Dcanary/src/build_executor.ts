@@ -243,10 +243,40 @@ export default class BuildExecutorCanister {
     private buildHistory = new StableBTreeMap<string, ExecuteBuildResult>(0);
     
     // Agent pool management (Phase 1 Enhancement)
-    private agentCapabilities: AgentCapabilities;
-    private buildQueue: BuildQueue;
-    private agentHealth: AgentHealth;
-    private currentResourceUsage: ResourceUsage;
+    private agentCapabilities: AgentCapabilities = {
+        labels: [],
+        max_concurrent_builds: 1,
+        available_resources: {
+            cpu_cores: 1,
+            memory_mb: 1024,
+            disk_space_gb: 10,
+            network_bandwidth: 100
+        },
+        supported_languages: [],
+        installed_tools: []
+    };
+    private buildQueue: BuildQueue = {
+        pending_builds: [],
+        running_builds: new Map(),
+        completed_builds: new Map(),
+        max_queue_size: 100
+    };
+    private agentHealth: AgentHealth = {
+        agent_id: Principal.fromText("2vxsx-fae"), // Default agent ID
+        last_heartbeat: BigInt(Date.now() * 1000000), // Convert to nanoseconds
+        cpu_usage: 0,
+        memory_usage: 0,
+        active_builds: 0,
+        queue_length: 0,
+        status: { Online: null },
+        uptime: 0n
+    };
+    private currentResourceUsage: ResourceUsage = {
+        cpu_time_ms: 0n,
+        memory_peak_mb: 0,
+        disk_used_gb: 0,
+        network_bytes: 0n
+    };
     
     // Store the last successful build hash for quick retrieval
     private lastSuccessfulHash: string = '';
@@ -1142,13 +1172,13 @@ ${instructions}
      * Calculate resource efficiency
      */
     private calculateResourceEfficiency(): number {
-        const total_builds = this.buildHistory.len();
-        if (total_builds === 0n) return 0;
+        const total_builds = Number(this.buildHistory.len());
+        if (total_builds === 0) return 0;
         
         // Simple efficiency calculation based on successful builds
         const items = this.buildHistory.items();
         const successful_builds = items.filter(([_, result]) => result.success).length;
         
-        return successful_builds / Number(total_builds);
+        return successful_builds / total_builds;
     }
 }

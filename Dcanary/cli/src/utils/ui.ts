@@ -239,6 +239,31 @@ export function showCursor(): void {
     process.stdout.write('\x1B[?25h');
 }
 
+/**
+ * Show header (alias for printHeader)
+ */
+export function showHeader(title: string): void {
+    printHeader(title);
+}
+
+/**
+ * Start a spinner (simplified version)
+ */
+export function startSpinner(message: string): { stop: () => void; succeed: () => void; fail: () => void } {
+    process.stdout.write(`${message}... `);
+    return {
+        stop: () => {
+            process.stdout.write('Done\n');
+        },
+        succeed: () => {
+            process.stdout.write('✓ Success\n');
+        },
+        fail: () => {
+            process.stdout.write('✗ Failed\n');
+        }
+    };
+}
+
 // UI object consolidating all UI functions for easier importing
 export const ui = {
     // Colors
@@ -252,11 +277,11 @@ export const ui = {
     printHeader,
     printSection,
     printKeyValue,
-    printList,
-    printError,
     printSuccess,
+    printError,
     printWarning,
     printInfo,
+    printList,
     
     // Helper functions
     clearLine,
@@ -272,5 +297,9 @@ export const ui = {
     header: printHeader,
     section: printSection,
     keyValue: printKeyValue,
-    list: printList
+    list: printList,
+    
+    // New additions
+    showHeader,
+    startSpinner
 };

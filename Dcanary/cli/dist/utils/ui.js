@@ -1,7 +1,7 @@
 "use strict";
 // Simple color and formatting utilities without external dependencies
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProgressBar = exports.Spinner = exports.Colors = void 0;
+exports.ui = exports.ProgressBar = exports.Spinner = exports.Colors = void 0;
 exports.printHeader = printHeader;
 exports.printSection = printSection;
 exports.printKeyValue = printKeyValue;
@@ -14,6 +14,8 @@ exports.clearLine = clearLine;
 exports.moveCursorUp = moveCursorUp;
 exports.hideCursor = hideCursor;
 exports.showCursor = showCursor;
+exports.showHeader = showHeader;
+exports.startSpinner = startSpinner;
 class Colors {
     static RESET = '\x1b[0m';
     static BRIGHT = '\x1b[1m';
@@ -206,4 +208,61 @@ function hideCursor() {
 function showCursor() {
     process.stdout.write('\x1B[?25h');
 }
+/**
+ * Show header (alias for printHeader)
+ */
+function showHeader(title) {
+    printHeader(title);
+}
+/**
+ * Start a spinner (simplified version)
+ */
+function startSpinner(message) {
+    process.stdout.write(`${message}... `);
+    return {
+        stop: () => {
+            process.stdout.write('Done\n');
+        },
+        succeed: () => {
+            process.stdout.write('✓ Success\n');
+        },
+        fail: () => {
+            process.stdout.write('✗ Failed\n');
+        }
+    };
+}
+// UI object consolidating all UI functions for easier importing
+exports.ui = {
+    // Colors
+    Colors,
+    // Components
+    Spinner,
+    ProgressBar,
+    // Print functions
+    printHeader,
+    printSection,
+    printKeyValue,
+    printSuccess,
+    printError,
+    printWarning,
+    printInfo,
+    printList,
+    // Helper functions
+    clearLine,
+    moveCursorUp,
+    hideCursor,
+    showCursor,
+    // Convenient aliases
+    showError: printError,
+    showSuccess: printSuccess,
+    showWarning: printWarning,
+    showInfo: printInfo,
+    header: printHeader,
+    section: printSection,
+    keyValue: printKeyValue,
+    list: printList,
+    // New additions
+    showHeader,
+    startSpinner
+};
 //# sourceMappingURL=ui.js.map

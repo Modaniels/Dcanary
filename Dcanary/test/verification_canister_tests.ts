@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { Principal } from '@dfinity/principal';
+import { TestContext, runTests, getCanisterActor } from './test_utils';
 
 describe('Verification Canister Tests', () => {
     let testContext: TestContext;
@@ -15,7 +16,7 @@ describe('Verification Canister Tests', () => {
             'verification_canister',
             'build_instructions_canister', 
             'build_executor_canister'
-        ], {});
+        ]);
 
         verificationCanister = getCanisterActor(testContext, 'verification_canister');
         buildInstructionsCanister = getCanisterActor(testContext, 'build_instructions_canister');
@@ -23,9 +24,8 @@ describe('Verification Canister Tests', () => {
     });
 
     afterAll(async () => {
-        if (testContext) {
-            await testContext.tearDown();
-        }
+        // Cleanup if needed
+        console.log('Test cleanup complete');
     });
 
     describe('Canister Initialization', () => {

@@ -1,4 +1,13 @@
 import { StatusOutput, VerificationResult } from '../types';
+import { HttpAgent, Identity } from '@dfinity/agent';
+/**
+ * Get identity for authentication
+ */
+export declare function getIdentity(): Identity;
+/**
+ * Get HTTP agent for canister communication
+ */
+export declare function getAgent(network?: string, identity?: Identity): HttpAgent;
 /**
  * Validate project ID format
  */

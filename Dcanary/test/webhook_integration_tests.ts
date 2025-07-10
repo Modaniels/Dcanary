@@ -12,9 +12,9 @@ describe('Webhook Integration Tests', () => {
         testIdentity = getTestIdentity();
         
         // Deploy webhook canister
-        canisterId = await deployCanister('webhook_canister', testIdentity);
+        canisterId = (await deployCanister('webhook_canister')).toString();
         
-        const agent = await getTestAgent(testIdentity);
+        const agent = getTestAgent();
         
         // Create webhook actor
         const webhookInterface = ({ IDL }: any) => {

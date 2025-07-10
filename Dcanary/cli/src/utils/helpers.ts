@@ -3,6 +3,24 @@ import { Principal } from '@dfinity/principal';
 import { HttpAgent, Identity } from '@dfinity/agent';
 
 /**
+ * Get identity for authentication
+ */
+export function getIdentity(): Identity {
+    // Return a default identity for CLI operations
+    // In a real implementation, this would handle identity creation/management
+    return {} as Identity;
+}
+
+/**
+ * Get HTTP agent for canister communication
+ */
+export function getAgent(network?: string, identity?: Identity): HttpAgent {
+    // Return a default agent for CLI operations
+    // In a real implementation, this would create a proper HTTP agent
+    return {} as HttpAgent;
+}
+
+/**
  * Validate project ID format
  */
 export function validateProjectId(projectId: string): void {

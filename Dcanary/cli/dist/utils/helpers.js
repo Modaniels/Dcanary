@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getIdentity = getIdentity;
+exports.getAgent = getAgent;
 exports.validateProjectId = validateProjectId;
 exports.validateVersion = validateVersion;
 exports.validateCanisterId = validateCanisterId;
@@ -17,6 +19,22 @@ exports.truncate = truncate;
 exports.isCI = isCI;
 exports.getExitCode = getExitCode;
 const types_1 = require("../types");
+/**
+ * Get identity for authentication
+ */
+function getIdentity() {
+    // Return a default identity for CLI operations
+    // In a real implementation, this would handle identity creation/management
+    return {};
+}
+/**
+ * Get HTTP agent for canister communication
+ */
+function getAgent(network, identity) {
+    // Return a default agent for CLI operations
+    // In a real implementation, this would create a proper HTTP agent
+    return {};
+}
 /**
  * Validate project ID format
  */

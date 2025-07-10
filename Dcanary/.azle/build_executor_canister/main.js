@@ -57945,10 +57945,42 @@ var BuildExecutorCanister = class {
     // Stable storage for build execution history
     __publicField(this, "buildHistory", new StableBTreeMap2(0));
     // Agent pool management (Phase 1 Enhancement)
-    __publicField(this, "agentCapabilities");
-    __publicField(this, "buildQueue");
-    __publicField(this, "agentHealth");
-    __publicField(this, "currentResourceUsage");
+    __publicField(this, "agentCapabilities", {
+      labels: [],
+      max_concurrent_builds: 1,
+      available_resources: {
+        cpu_cores: 1,
+        memory_mb: 1024,
+        disk_space_gb: 10,
+        network_bandwidth: 100
+      },
+      supported_languages: [],
+      installed_tools: []
+    });
+    __publicField(this, "buildQueue", {
+      pending_builds: [],
+      running_builds: /* @__PURE__ */ new Map(),
+      completed_builds: /* @__PURE__ */ new Map(),
+      max_queue_size: 100
+    });
+    __publicField(this, "agentHealth", {
+      agent_id: Principal.fromText("2vxsx-fae"),
+      // Default agent ID
+      last_heartbeat: BigInt(Date.now() * 1e6),
+      // Convert to nanoseconds
+      cpu_usage: 0,
+      memory_usage: 0,
+      active_builds: 0,
+      queue_length: 0,
+      status: { Online: null },
+      uptime: 0n
+    });
+    __publicField(this, "currentResourceUsage", {
+      cpu_time_ms: 0n,
+      memory_peak_mb: 0,
+      disk_used_gb: 0,
+      network_bytes: 0n
+    });
     // Store the last successful build hash for quick retrieval
     __publicField(this, "lastSuccessfulHash", "");
     // Configuration
@@ -58579,11 +58611,11 @@ console.log('Built at ${(/* @__PURE__ */ new Date()).toISOString()}');
    * Calculate resource efficiency
    */
   calculateResourceEfficiency() {
-    const total_builds = this.buildHistory.len();
-    if (total_builds === 0n) return 0;
+    const total_builds = Number(this.buildHistory.len());
+    if (total_builds === 0) return 0;
     const items = this.buildHistory.items();
     const successful_builds = items.filter(([_, result2]) => result2.success).length;
-    return successful_builds / Number(total_builds);
+    return successful_builds / total_builds;
   }
 };
 _init = __decoratorStart(null);

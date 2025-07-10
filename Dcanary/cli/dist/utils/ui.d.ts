@@ -62,4 +62,43 @@ export declare function clearLine(): void;
 export declare function moveCursorUp(lines?: number): void;
 export declare function hideCursor(): void;
 export declare function showCursor(): void;
+/**
+ * Show header (alias for printHeader)
+ */
+export declare function showHeader(title: string): void;
+/**
+ * Start a spinner (simplified version)
+ */
+export declare function startSpinner(message: string): {
+    stop: () => void;
+    succeed: () => void;
+    fail: () => void;
+};
+export declare const ui: {
+    Colors: typeof Colors;
+    Spinner: typeof Spinner;
+    ProgressBar: typeof ProgressBar;
+    printHeader: typeof printHeader;
+    printSection: typeof printSection;
+    printKeyValue: typeof printKeyValue;
+    printSuccess: typeof printSuccess;
+    printError: typeof printError;
+    printWarning: typeof printWarning;
+    printInfo: typeof printInfo;
+    printList: typeof printList;
+    clearLine: typeof clearLine;
+    moveCursorUp: typeof moveCursorUp;
+    hideCursor: typeof hideCursor;
+    showCursor: typeof showCursor;
+    showError: typeof printError;
+    showSuccess: typeof printSuccess;
+    showWarning: typeof printWarning;
+    showInfo: typeof printInfo;
+    header: typeof printHeader;
+    section: typeof printSection;
+    keyValue: typeof printKeyValue;
+    list: typeof printList;
+    showHeader: typeof showHeader;
+    startSpinner: typeof startSpinner;
+};
 //# sourceMappingURL=ui.d.ts.map

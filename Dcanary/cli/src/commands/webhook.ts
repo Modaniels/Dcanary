@@ -71,19 +71,19 @@ export function createWebhookCommand(): Command {
                         canisterId: parentOptions.canisterId
                     });
 
-                    const triggers = await webhookActor.getBuildTriggers(projectId);
+                    const result = await webhookActor.getBuildTriggers(projectId) as any[];
                     
                     spinner.succeed();
 
-                    if (triggers.length === 0) {
+                    if (result.length === 0) {
                         ui.showInfo('No build triggers found for this project.');
                         return;
                     }
 
                     const limit = parseInt(options.limit);
-                    const limitedTriggers = triggers.slice(0, limit);
+                    const limitedTriggers = result.slice(0, limit);
 
-                    ui.showInfo(`Found ${triggers.length} build triggers (showing ${limitedTriggers.length}):\n`);
+                    ui.showInfo(`Found ${result.length} build triggers (showing ${limitedTriggers.length}):\n`);
                     
                     limitedTriggers.forEach((trigger: any, index: number) => {
                         const triggerType = Object.keys(trigger.trigger_type)[0];
@@ -113,8 +113,8 @@ export function createWebhookCommand(): Command {
                         console.log('');
                     });
 
-                    if (triggers.length > limit) {
-                        ui.showInfo(`... and ${triggers.length - limit} more triggers. Use --limit to see more.`);
+                    if (result.length > limit) {
+                        ui.showInfo(`... and ${result.length - limit} more triggers. Use --limit to see more.`);
                     }
 
                 } catch (error) {
@@ -154,7 +154,7 @@ export function createWebhookCommand(): Command {
                         canisterId: parentOptions.canisterId
                     });
 
-                    const triggerOpt = await webhookActor.getBuildTrigger(triggerId);
+                    const triggerOpt = await webhookActor.getBuildTrigger(triggerId) as any[];
                     
                     spinner.succeed();
 
