@@ -1,4 +1,22 @@
 service : {
+  approveDeployment : (text, bool, opt text) -> ();
+  configureDeploymentApproval : (
+      record {
+        repository_id : text;
+        pipeline_id : text;
+        min_approvals : nat8;
+        block_on_verification_failure : bool;
+        required_approvers : vec principal;
+        approval_status : variant {
+          Approved : record { approved_at : nat64 };
+          Rejected : record { rejected_by : principal; reason : text };
+          Expired : record { expired_at : nat64 };
+          Pending : record { pending_approvers : vec principal };
+        };
+        approval_timeout_hours : nat32;
+        auto_approve_on_quality_gates : bool;
+      },
+    ) -> ();
   create_pipeline_template : (
       text,
       record {
@@ -63,6 +81,7 @@ service : {
         };
       },
     );
+  getPipelineVerification : (text) -> () query;
   get_active_verifications : () -> (
       vec record {
         text;
@@ -172,6 +191,7 @@ service : {
         };
       },
     ) query;
+  listPipelineVerifications : (text) -> () query;
   list_active_pipeline_instances : () -> (vec text) query;
   list_pipeline_templates : () -> (
       vec record {
@@ -261,7 +281,43 @@ service : {
         };
       },
     );
+  setQualityGates : (
+      text,
+      vec record {
+        name : text;
+        required : bool;
+        gate_type : variant {
+          TestCoverage : record { min_percentage : float32 };
+          CodeQuality : record { max_violations : nat32 };
+          PerformanceTest : record { max_response_time_ms : nat32 };
+          SecurityScan : record { max_vulnerabilities : nat32 };
+          CustomCheck : record { expected_output : text; check_command : text };
+        };
+        timeout_seconds : nat32;
+      },
+    ) -> ();
   update_authorized_requester : (principal) -> (bool);
   update_build_executor_canisters : (vec principal) -> (bool);
   update_build_instructions_canister : (principal) -> (bool);
+  verifyPipelineExecution : (
+      record {
+        branch : text;
+        required_consensus : nat8;
+        pipeline_config : text;
+        repository_id : text;
+        pipeline_id : text;
+        executor_results : vec record {
+          stage_results : vec record {
+            artifacts : vec record { text; blob };
+            execution_time : nat64;
+            metadata : vec record { text; text };
+            cycles_consumed : nat64;
+            success : bool;
+            stage_name : text;
+          };
+          executor_id : principal;
+        };
+        commit_hash : text;
+      },
+    ) -> ();
 }

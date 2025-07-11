@@ -6374,8 +6374,31 @@ var RepositoryResult = idl_exports.Variant({
   Ok: idl_exports.Text,
   Err: RepositoryError
 });
-var _getBuildTrigger_dec, _getBuildTriggers_dec, _setVerificationCanister_dec, _handleWebhookEvent_dec, _listRepositoriesByProject_dec, _getRepository_dec, _updateRepository_dec, _registerRepository_dec, _postUpgrade_dec, _init_dec, _init;
-_init_dec = [init([])], _postUpgrade_dec = [postUpgrade([])], _registerRepository_dec = [update([idl_exports.Text, SCMProvider, idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Bool, idl_exports.Bool, idl_exports.Vec(idl_exports.Text)])], _updateRepository_dec = [update([idl_exports.Text, idl_exports.Bool, idl_exports.Bool, idl_exports.Vec(idl_exports.Text)])], _getRepository_dec = [query([idl_exports.Text])], _listRepositoriesByProject_dec = [query([idl_exports.Text])], _handleWebhookEvent_dec = [update([idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Opt(idl_exports.Text)])], _setVerificationCanister_dec = [update([idl_exports.Principal])], _getBuildTriggers_dec = [query([idl_exports.Text])], _getBuildTrigger_dec = [query([idl_exports.Text])];
+var PipelineExecutionRequest = idl_exports.Record({
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  branch: idl_exports.Text,
+  trigger_type: idl_exports.Text,
+  source_url: idl_exports.Text,
+  timestamp: idl_exports.Nat64
+});
+var PipelineExecutionResult = idl_exports.Variant({
+  Ok: idl_exports.Record({
+    pipeline_id: idl_exports.Text,
+    build_id: idl_exports.Text,
+    executor_ids: idl_exports.Vec(idl_exports.Principal)
+  }),
+  Err: idl_exports.Text
+});
+var BuildQueueEntry = idl_exports.Record({
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  priority: idl_exports.Nat8,
+  queued_at: idl_exports.Nat64,
+  estimated_duration: idl_exports.Opt(idl_exports.Nat64)
+});
+var _getPipelineHistory_dec, _getBuildQueueStatus_dec, _triggerPipelineExecution_dec, _addBuildExecutor_dec, _setPipelineConfigCanister_dec, _setVerificationCanister_dec, _handleWebhookEvent_dec, _getBuildTrigger_dec, _getBuildTriggers_dec, _listRepositoriesByProject_dec, _getRepository_dec, _updateRepository_dec, _registerRepository_dec, _postUpgrade_dec, _init_dec, _init;
+_init_dec = [init([])], _postUpgrade_dec = [postUpgrade([])], _registerRepository_dec = [update([idl_exports.Text, SCMProvider, idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Bool, idl_exports.Bool, idl_exports.Vec(idl_exports.Text)])], _updateRepository_dec = [update([idl_exports.Text, idl_exports.Bool, idl_exports.Bool, idl_exports.Vec(idl_exports.Text)])], _getRepository_dec = [query([idl_exports.Text])], _listRepositoriesByProject_dec = [query([idl_exports.Text])], _getBuildTriggers_dec = [query([idl_exports.Text])], _getBuildTrigger_dec = [query([idl_exports.Text])], _handleWebhookEvent_dec = [update([idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Opt(idl_exports.Text)])], _setVerificationCanister_dec = [update([idl_exports.Principal])], _setPipelineConfigCanister_dec = [update([idl_exports.Principal])], _addBuildExecutor_dec = [update([idl_exports.Principal])], _triggerPipelineExecution_dec = [update([idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Text, idl_exports.Text])], _getBuildQueueStatus_dec = [query([])], _getPipelineHistory_dec = [query([idl_exports.Text])];
 var WebhookHandlerCanister = class {
   constructor() {
     __runInitializers(_init, 5, this);
@@ -6383,6 +6406,12 @@ var WebhookHandlerCanister = class {
     __publicField(this, "repositories", new StableBTreeMap(0));
     // Stable storage for build triggers
     __publicField(this, "buildTriggers", new StableBTreeMap(1));
+    // NEW: Build queue for managing concurrent executions
+    __publicField(this, "buildQueue", new StableBTreeMap(2));
+    // NEW: Pipeline configuration canister reference
+    __publicField(this, "pipelineConfigCanisterId", null);
+    // NEW: Build executor pool references
+    __publicField(this, "buildExecutorPool", []);
     // Admin principal
     __publicField(this, "adminPrincipal", Principal.fromText("2vxsx-fae"));
     // Verification canister principal (to be set via configuration)
@@ -6477,6 +6506,23 @@ var WebhookHandlerCanister = class {
       }
     }
     return repositories;
+  }
+  getBuildTriggers(projectId) {
+    const triggers = [];
+    for (let i = 0; i < this.buildTriggers.len(); i++) {
+      const items = this.buildTriggers.items(i, 1);
+      if (items.length > 0) {
+        const [_, trigger] = items[0];
+        if (trigger.project_id === projectId) {
+          triggers.push(trigger);
+        }
+      }
+    }
+    return triggers.sort((a, b) => Number(b.triggered_at - a.triggered_at));
+  }
+  getBuildTrigger(triggerId) {
+    const trigger = this.buildTriggers.get(triggerId);
+    return trigger === void 0 ? null : trigger;
   }
   async handleWebhookEvent(repositoryId, eventType, commitSha, branch, commitMessage) {
     try {
@@ -6576,22 +6622,110 @@ var WebhookHandlerCanister = class {
     this.verificationCanisterPrincipal = principal;
     return true;
   }
-  getBuildTriggers(projectId) {
-    const triggers = [];
-    for (let i = 0; i < this.buildTriggers.len(); i++) {
-      const items = this.buildTriggers.items(i, 1);
-      if (items.length > 0) {
-        const [_, trigger] = items[0];
-        if (trigger.project_id === projectId) {
-          triggers.push(trigger);
-        }
-      }
+  setPipelineConfigCanister(principal) {
+    const caller = msgCaller();
+    if (caller.toText() !== this.adminPrincipal.toText()) {
+      trap("Only admin can set pipeline config canister");
     }
-    return triggers.sort((a, b) => Number(b.triggered_at - a.triggered_at));
+    this.pipelineConfigCanisterId = principal;
+    return true;
   }
-  getBuildTrigger(triggerId) {
-    const trigger = this.buildTriggers.get(triggerId);
-    return trigger === void 0 ? null : trigger;
+  addBuildExecutor(principal) {
+    const caller = msgCaller();
+    if (caller.toText() !== this.adminPrincipal.toText()) {
+      trap("Only admin can add build executors");
+    }
+    if (!this.buildExecutorPool.includes(principal)) {
+      this.buildExecutorPool.push(principal);
+    }
+    return true;
+  }
+  async triggerPipelineExecution(repositoryId, eventType, branch, commitSha, commitMessage, sourceUrl) {
+    try {
+      const repo = this.repositories.get(repositoryId);
+      if (!repo) {
+        return { Err: `Repository ${repositoryId} not found` };
+      }
+      if (!this.pipelineConfigCanisterId) {
+        return { Err: "Pipeline configuration canister not set" };
+      }
+      let pipelineConfig;
+      try {
+        pipelineConfig = await call(this.pipelineConfigCanisterId, "get_pipeline_config", {
+          paramIdlTypes: [idl_exports.Text],
+          returnIdlType: idl_exports.Text,
+          // This should be the actual pipeline config IDL type
+          args: [repositoryId]
+        });
+      } catch (error) {
+        return { Err: `Failed to get pipeline config: ${error}` };
+      }
+      const executionRequest = {
+        repository_id: repositoryId,
+        commit_hash: commitSha,
+        branch,
+        trigger_type: eventType,
+        source_url: sourceUrl,
+        timestamp: time()
+      };
+      const queueEntry = {
+        repository_id: repositoryId,
+        commit_hash: commitSha,
+        priority: 1,
+        // Normal priority
+        queued_at: time(),
+        estimated_duration: null
+      };
+      const queueId = `${repositoryId}_${commitSha}`;
+      this.buildQueue.insert(queueId, queueEntry);
+      const selectedExecutor = this.selectBuildExecutor();
+      if (!selectedExecutor) {
+        return { Err: "No build executors available" };
+      }
+      let buildResult;
+      try {
+        buildResult = await call(selectedExecutor, "execute_pipeline", {
+          paramIdlTypes: [PipelineExecutionRequest],
+          returnIdlType: idl_exports.Text,
+          // This should be the actual build result IDL type
+          args: [executionRequest]
+        });
+      } catch (error) {
+        this.buildQueue.delete(queueId);
+        return { Err: `Pipeline execution failed: ${error}` };
+      }
+      this.buildQueue.delete(queueId);
+      const buildTrigger = this.createBuildTrigger(repo, eventType, branch, commitSha, commitMessage);
+      const triggerId = this.generateTriggerId();
+      this.buildTriggers.insert(triggerId, buildTrigger);
+      return {
+        Ok: {
+          pipeline_id: `pipeline_${repositoryId}_${commitSha}`,
+          build_id: triggerId,
+          executor_ids: [selectedExecutor]
+        }
+      };
+    } catch (error) {
+      return { Err: `Pipeline trigger failed: ${error}` };
+    }
+  }
+  getBuildQueueStatus() {
+    return this.buildQueue.items();
+  }
+  getPipelineHistory(repositoryId) {
+    const triggers = this.buildTriggers.items();
+    return triggers.filter(([_, trigger]) => trigger.repository_id === repositoryId);
+  }
+  /**
+   * Select an available build executor (simple round-robin for now)
+   */
+  selectBuildExecutor() {
+    if (this.buildExecutorPool.length === 0) {
+      return null;
+    }
+    const now = Number(time());
+    const index = now % this.buildExecutorPool.length;
+    return this.buildExecutorPool[index];
   }
 };
 _init = __decoratorStart(null);
@@ -6601,10 +6735,15 @@ __decorateElement(_init, 1, "registerRepository", _registerRepository_dec, Webho
 __decorateElement(_init, 1, "updateRepository", _updateRepository_dec, WebhookHandlerCanister);
 __decorateElement(_init, 1, "getRepository", _getRepository_dec, WebhookHandlerCanister);
 __decorateElement(_init, 1, "listRepositoriesByProject", _listRepositoriesByProject_dec, WebhookHandlerCanister);
-__decorateElement(_init, 1, "handleWebhookEvent", _handleWebhookEvent_dec, WebhookHandlerCanister);
-__decorateElement(_init, 1, "setVerificationCanister", _setVerificationCanister_dec, WebhookHandlerCanister);
 __decorateElement(_init, 1, "getBuildTriggers", _getBuildTriggers_dec, WebhookHandlerCanister);
 __decorateElement(_init, 1, "getBuildTrigger", _getBuildTrigger_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "handleWebhookEvent", _handleWebhookEvent_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "setVerificationCanister", _setVerificationCanister_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "setPipelineConfigCanister", _setPipelineConfigCanister_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "addBuildExecutor", _addBuildExecutor_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "triggerPipelineExecution", _triggerPipelineExecution_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "getBuildQueueStatus", _getBuildQueueStatus_dec, WebhookHandlerCanister);
+__decorateElement(_init, 1, "getPipelineHistory", _getPipelineHistory_dec, WebhookHandlerCanister);
 __decoratorMetadata(_init, WebhookHandlerCanister);
 
 // <stdin>

@@ -5297,7 +5297,7 @@ function namedTypesToStingArr(newTypes) {
 }
 
 // node_modules/azle/src/stable/lib/ic_apis/trap.ts
-function trap(message) {
+function trap2(message) {
   if (globalThis._azleIcExperimental !== void 0) {
     return globalThis._azleIcExperimental.trap(message);
   }
@@ -5317,11 +5317,11 @@ function handleUncaughtError(rawError) {
   }
   if (rawError instanceof Error) {
     const error = rawError;
-    trap(`Uncaught ${error.name}: ${error.message}
+    trap2(`Uncaught ${error.name}: ${error.message}
 ${error.stack}`);
   } else {
     const error = new Error(rawError);
-    trap(`Uncaught: ${error.message}
+    trap2(`Uncaught: ${error.message}
 ${error.stack}`);
   }
 }
@@ -5901,6 +5901,48 @@ function createRejectCallback(globalRejectId, reject) {
 }
 
 // node_modules/azle/src/stable/lib/ic_apis/set_timer.ts
+function setTimer(delay, callback, asyncCleanup = true) {
+  if (globalThis._azleIc === void 0 && globalThis._azleIcExperimental === void 0) {
+    return 0n;
+  }
+  validateUnsignedInteger("setTimer delay", 53, delay);
+  const timerId = globalThis._azleIcExperimental !== void 0 ? BigInt(globalThis._azleIcExperimental.setTimer(delay.toString())) : globalThis._azleIc !== void 0 ? globalThis._azleIc.setTimer(delay) : (() => {
+    throw new Error(
+      "Neither globalThis._azleIc nor globalThis._azleIcExperimental are defined"
+    );
+  })();
+  if (globalThis._azleDispatch === void 0) {
+    throw new Error("globalThis._azleDispatch is undefined");
+  }
+  globalThis._azleDispatch({
+    type: "SET_AZLE_TIMER_CALLBACK",
+    payload: {
+      timerId,
+      timerCallback: async () => {
+        try {
+          if (asyncCleanup === true) {
+            setTimer(
+              0,
+              () => {
+                deleteGlobalTimerCallbacks(timerId);
+              },
+              false
+            );
+          }
+          deleteGlobalTimerCallbacks(timerId);
+          await callback();
+        } catch (error) {
+          handleUncaughtError(error);
+        }
+      }
+    },
+    location: {
+      filepath: "azle/src/stable/lib/ic_apis/set_timer.ts",
+      functionName: "setTimer"
+    }
+  });
+  return timerId;
+}
 function deleteGlobalTimerCallbacks(timerId) {
   if (globalThis._azleDispatch === void 0) {
     throw new Error("globalThis._azleDispatch is undefined");
@@ -6423,7 +6465,145 @@ var VerificationResultWrapper = idl_exports.Variant({
   Ok: VerificationResult,
   Err: VerificationError
 });
-var _list_active_pipeline_instances_dec, _get_pipeline_instance_status_dec, _execute_pipeline_template_dec, _list_pipeline_templates_dec, _get_pipeline_template_dec, _create_pipeline_template_dec, _get_active_verifications_dec, _list_verification_history_dec, _get_canister_info_dec, _update_build_instructions_canister_dec, _update_build_executor_canisters_dec, _update_authorized_requester_dec, _get_verification_status_dec, _request_verification_dec, _postUpgrade_dec, _init_dec, _init;
+var PipelineVerificationRequest = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  branch: idl_exports.Text,
+  pipeline_config: idl_exports.Text,
+  // JSON-encoded pipeline configuration
+  executor_results: idl_exports.Vec(idl_exports.Record({
+    executor_id: idl_exports.Principal,
+    stage_results: idl_exports.Vec(idl_exports.Record({
+      stage_name: idl_exports.Text,
+      success: idl_exports.Bool,
+      artifacts: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Vec(idl_exports.Nat8))),
+      metadata: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Text)),
+      cycles_consumed: idl_exports.Nat64,
+      execution_time: idl_exports.Nat64
+    }))
+  })),
+  required_consensus: idl_exports.Nat8
+  // Number of executors that must agree
+});
+var PipelineVerificationResult = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  status: VerificationStatus,
+  consensus_achieved: idl_exports.Bool,
+  verified_stages: idl_exports.Vec(idl_exports.Text),
+  failed_stages: idl_exports.Vec(idl_exports.Text),
+  quality_gates_passed: idl_exports.Bool,
+  deployment_approved: idl_exports.Bool,
+  verification_details: idl_exports.Record({
+    total_executors: idl_exports.Nat8,
+    consensus_count: idl_exports.Nat8,
+    stage_consensus: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Nat8)),
+    artifact_hashes: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Text)),
+    // stage -> hash
+    execution_summary: idl_exports.Record({
+      total_cycles: idl_exports.Nat64,
+      total_time: idl_exports.Nat64,
+      success_rate: idl_exports.Float32
+    })
+  }),
+  created_at: idl_exports.Nat64,
+  completed_at: idl_exports.Opt(idl_exports.Nat64),
+  approvals: idl_exports.Vec(idl_exports.Record({
+    approver: idl_exports.Principal,
+    approved: idl_exports.Bool,
+    timestamp: idl_exports.Nat64,
+    comment: idl_exports.Opt(idl_exports.Text)
+  }))
+});
+var QualityGate = idl_exports.Record({
+  name: idl_exports.Text,
+  gate_type: idl_exports.Variant({
+    TestCoverage: idl_exports.Record({ min_percentage: idl_exports.Float32 }),
+    CodeQuality: idl_exports.Record({ max_violations: idl_exports.Nat32 }),
+    SecurityScan: idl_exports.Record({ max_vulnerabilities: idl_exports.Nat32 }),
+    PerformanceTest: idl_exports.Record({ max_response_time_ms: idl_exports.Nat32 }),
+    CustomCheck: idl_exports.Record({ check_command: idl_exports.Text, expected_output: idl_exports.Text })
+  }),
+  required: idl_exports.Bool,
+  timeout_seconds: idl_exports.Nat32
+});
+var DeploymentApproval = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  repository_id: idl_exports.Text,
+  required_approvers: idl_exports.Vec(idl_exports.Principal),
+  min_approvals: idl_exports.Nat8,
+  approval_timeout_hours: idl_exports.Nat32,
+  auto_approve_on_quality_gates: idl_exports.Bool,
+  block_on_verification_failure: idl_exports.Bool,
+  approval_status: idl_exports.Variant({
+    Pending: idl_exports.Record({ pending_approvers: idl_exports.Vec(idl_exports.Principal) }),
+    Approved: idl_exports.Record({ approved_at: idl_exports.Nat64 }),
+    Rejected: idl_exports.Record({ rejected_by: idl_exports.Principal, reason: idl_exports.Text }),
+    Expired: idl_exports.Record({ expired_at: idl_exports.Nat64 })
+  })
+});
+var PipelineVerificationError = idl_exports.Variant({
+  NotFound: idl_exports.Text,
+  Unauthorized: idl_exports.Text,
+  InvalidInput: idl_exports.Text,
+  InternalError: idl_exports.Text,
+  ConsensusNotAchieved: idl_exports.Text,
+  QualityGatesFailed: idl_exports.Text,
+  ApprovalTimeout: idl_exports.Text,
+  InsufficientApprovals: idl_exports.Text,
+  VerificationInProgress: idl_exports.Text
+});
+var PipelineVerificationResultWrapper = idl_exports.Variant({
+  Ok: PipelineVerificationResult,
+  Err: PipelineVerificationError
+});
+var PipelineExecutionVerificationResult = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  branch: idl_exports.Text,
+  status: VerificationStatus,
+  consensus_achieved: idl_exports.Bool,
+  verified_stages: idl_exports.Vec(idl_exports.Text),
+  failed_stages: idl_exports.Vec(idl_exports.Text),
+  quality_gates_passed: idl_exports.Bool,
+  deployment_approved: idl_exports.Bool,
+  error: idl_exports.Opt(idl_exports.Text),
+  created_at: idl_exports.Nat64,
+  completed_at: idl_exports.Opt(idl_exports.Nat64)
+});
+var PipelineStageVerificationResult = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  branch: idl_exports.Text,
+  stage_name: idl_exports.Text,
+  status: VerificationStatus,
+  success: idl_exports.Bool,
+  error: idl_exports.Opt(idl_exports.Text),
+  artifacts: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Vec(idl_exports.Nat8))),
+  metadata: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Text)),
+  cycles_consumed: idl_exports.Nat64,
+  execution_time: idl_exports.Nat64,
+  created_at: idl_exports.Nat64,
+  completed_at: idl_exports.Opt(idl_exports.Nat64)
+});
+var PipelineStepVerificationResult = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  branch: idl_exports.Text,
+  stage_name: idl_exports.Text,
+  step_type: idl_exports.Text,
+  status: VerificationStatus,
+  success: idl_exports.Bool,
+  error: idl_exports.Opt(idl_exports.Text),
+  output: idl_exports.Text,
+  executor_id: idl_exports.Principal,
+  created_at: idl_exports.Nat64,
+  completed_at: idl_exports.Opt(idl_exports.Nat64)
+});
+var _listPipelineVerifications_dec, _getPipelineVerification_dec, _approveDeployment_dec, _configureDeploymentApproval_dec, _setQualityGates_dec, _verifyPipelineExecution_dec, _list_active_pipeline_instances_dec, _get_pipeline_instance_status_dec, _execute_pipeline_template_dec, _list_pipeline_templates_dec, _get_pipeline_template_dec, _create_pipeline_template_dec, _get_active_verifications_dec, _list_verification_history_dec, _get_canister_info_dec, _update_build_instructions_canister_dec, _update_build_executor_canisters_dec, _update_authorized_requester_dec, _get_verification_status_dec, _request_verification_dec, _postUpgrade_dec, _init_dec, _init;
 _init_dec = [init([])], _postUpgrade_dec = [postUpgrade([])], _request_verification_dec = [update([idl_exports.Text, idl_exports.Text, idl_exports.Opt(idl_exports.Nat64)], VerificationResultWrapper)], _get_verification_status_dec = [query([idl_exports.Text, idl_exports.Text], VerificationResultWrapper)], _update_authorized_requester_dec = [update([idl_exports.Principal], idl_exports.Bool)], _update_build_executor_canisters_dec = [update([idl_exports.Vec(idl_exports.Principal)], idl_exports.Bool)], _update_build_instructions_canister_dec = [update([idl_exports.Principal], idl_exports.Bool)], _get_canister_info_dec = [query([], idl_exports.Record({
   version: idl_exports.Text,
   deployed_at: idl_exports.Nat64,
@@ -6442,7 +6622,7 @@ _init_dec = [init([])], _postUpgrade_dec = [postUpgrade([])], _request_verificat
   started_at: idl_exports.Nat64,
   completed_at: idl_exports.Opt(idl_exports.Nat64),
   error: idl_exports.Opt(idl_exports.Text)
-})))], _list_active_pipeline_instances_dec = [query([], idl_exports.Vec(idl_exports.Text))];
+})))], _list_active_pipeline_instances_dec = [query([], idl_exports.Vec(idl_exports.Text))], _verifyPipelineExecution_dec = [update([PipelineVerificationRequest])], _setQualityGates_dec = [update([idl_exports.Text, idl_exports.Vec(QualityGate)])], _configureDeploymentApproval_dec = [update([DeploymentApproval])], _approveDeployment_dec = [update([idl_exports.Text, idl_exports.Bool, idl_exports.Opt(idl_exports.Text)])], _getPipelineVerification_dec = [query([idl_exports.Text])], _listPipelineVerifications_dec = [query([idl_exports.Text])];
 var VerificationCanister = class {
   constructor() {
     __runInitializers(_init, 5, this);
@@ -6478,6 +6658,15 @@ var VerificationCanister = class {
     // Canister metadata
     __publicField(this, "canisterVersion", "1.0.0");
     __publicField(this, "deployedAt", 0n);
+    // ============================================================================
+    // PIPELINE VERIFICATION METHODS (NEW)
+    // ============================================================================
+    // Stable storage for pipeline verifications
+    __publicField(this, "pipelineVerifications", new StableBTreeMap(5));
+    // Deployment approvals
+    __publicField(this, "deploymentApprovals", new StableBTreeMap(6));
+    // Quality gates configuration
+    __publicField(this, "qualityGates", new StableBTreeMap(7));
   }
   init() {
     this.deployedAt = time();
@@ -7171,6 +7360,353 @@ var VerificationCanister = class {
     result.output = `Generic step ${step.step_type} executed for ${pipeline.project_id}`;
     console.log(result.output);
   }
+  async verifyPipelineExecution(request) {
+    const caller = msgCaller();
+    try {
+      if (request.executor_results.length === 0) {
+        return { Err: { InvalidInput: "No executor results provided" } };
+      }
+      if (request.required_consensus > request.executor_results.length) {
+        return { Err: { InvalidInput: "Required consensus exceeds number of executors" } };
+      }
+      const verificationId = this.generateVerificationId(request.pipeline_id);
+      const now = time();
+      const consensusAnalysis = this.analyzeExecutorConsensus(request);
+      const qualityGatesPassed = await this.checkQualityGates(request.repository_id, request);
+      let status;
+      let deploymentApproved = false;
+      if (consensusAnalysis.consensus_achieved && qualityGatesPassed) {
+        status = { Verified: null };
+        const approval = this.deploymentApprovals.get(request.pipeline_id);
+        if (approval && approval.auto_approve_on_quality_gates) {
+          deploymentApproved = true;
+        }
+      } else {
+        status = { Failed: null };
+      }
+      const verificationResult = {
+        pipeline_id: request.pipeline_id,
+        status,
+        consensus_achieved: consensusAnalysis.consensus_achieved,
+        verified_stages: consensusAnalysis.verified_stages,
+        failed_stages: consensusAnalysis.failed_stages,
+        quality_gates_passed: qualityGatesPassed,
+        deployment_approved: deploymentApproved,
+        verification_details: {
+          total_executors: request.executor_results.length,
+          consensus_count: consensusAnalysis.consensus_count,
+          stage_consensus: consensusAnalysis.stage_consensus,
+          artifact_hashes: consensusAnalysis.artifact_hashes,
+          execution_summary: consensusAnalysis.execution_summary
+        },
+        created_at: now,
+        completed_at: now,
+        approvals: []
+      };
+      this.pipelineVerifications.insert(verificationId, verificationResult);
+      if ("Verified" in status && !deploymentApproved) {
+        const approval = this.deploymentApprovals.get(request.pipeline_id);
+        if (approval) {
+          await this.initiateDeploymentApproval(request.pipeline_id, approval);
+        }
+      }
+      return { Ok: verificationResult };
+    } catch (error) {
+      return { Err: { InternalError: `Verification failed: ${error}` } };
+    }
+  }
+  setQualityGates(repositoryId, gates) {
+    const caller = msgCaller();
+    if (caller.toText() !== this.adminPrincipal.toText()) {
+      trap("Only admin can configure quality gates");
+    }
+    this.qualityGates.insert(repositoryId, gates);
+    return true;
+  }
+  configureDeploymentApproval(approval) {
+    const caller = msgCaller();
+    if (caller.toText() !== this.adminPrincipal.toText()) {
+      trap("Only admin can configure deployment approvals");
+    }
+    this.deploymentApprovals.insert(approval.pipeline_id, approval);
+    return true;
+  }
+  async approveDeployment(pipelineId, approved, comment) {
+    const caller = msgCaller();
+    const approval = this.deploymentApprovals.get(pipelineId);
+    if (!approval) {
+      trap("No deployment approval configured for this pipeline");
+    }
+    if (!approval.required_approvers.some((approver) => approver.toText() === caller.toText())) {
+      trap("Not authorized to approve this deployment");
+    }
+    const verificationResult = Array.from(this.pipelineVerifications.values()).find((v) => v.pipeline_id === pipelineId);
+    if (!verificationResult) {
+      trap("No verification result found for this pipeline");
+    }
+    const newApproval = {
+      approver: caller,
+      approved,
+      timestamp: time(),
+      comment
+    };
+    const updatedVerification = {
+      ...verificationResult,
+      approvals: [...verificationResult.approvals, newApproval],
+      deployment_approved: approved && this.checkApprovalRequirements(approval, [...verificationResult.approvals, newApproval])
+    };
+    const verificationId = Array.from(this.pipelineVerifications.keys()).find((key) => {
+      const result = this.pipelineVerifications.get(key);
+      return result?.pipeline_id === pipelineId;
+    });
+    if (verificationId) {
+      this.pipelineVerifications.insert(verificationId, updatedVerification);
+    }
+    return true;
+  }
+  getPipelineVerification(pipelineId) {
+    const result = Array.from(this.pipelineVerifications.values()).find((v) => v.pipeline_id === pipelineId);
+    if (!result) {
+      return { Err: { NotFound: `No verification found for pipeline ${pipelineId}` } };
+    }
+    return { Ok: result };
+  }
+  listPipelineVerifications(repositoryId) {
+    const results = [];
+    for (let i = 0; i < this.pipelineVerifications.len(); i++) {
+      const items = this.pipelineVerifications.items(i, 1);
+      if (items.length > 0) {
+        const [_, result] = items[0];
+        results.push(result);
+      }
+    }
+    return results.sort((a, b) => Number(b.created_at - a.created_at));
+  }
+  // ============================================================================
+  // PIPELINE VERIFICATION HELPER METHODS
+  // ============================================================================
+  /**
+   * Analyze executor results for consensus
+   */
+  analyzeExecutorConsensus(request) {
+    const stageResults = /* @__PURE__ */ new Map();
+    const artifactHashes = /* @__PURE__ */ new Map();
+    let totalCycles = 0n;
+    let totalTime = 0n;
+    let totalStages = 0;
+    let successfulStages = 0;
+    for (const executorResult of request.executor_results) {
+      for (const stageResult of executorResult.stage_results) {
+        if (!stageResults.has(stageResult.stage_name)) {
+          stageResults.set(stageResult.stage_name, []);
+        }
+        stageResults.get(stageResult.stage_name).push({
+          success: stageResult.success,
+          artifacts: stageResult.artifacts,
+          cycles: stageResult.cycles_consumed,
+          time: stageResult.execution_time
+        });
+        totalCycles += stageResult.cycles_consumed;
+        totalTime += stageResult.execution_time;
+        totalStages++;
+        if (stageResult.success) {
+          successfulStages++;
+        }
+        if (stageResult.artifacts.length > 0) {
+          const artifactData = stageResult.artifacts.map(([name, data]) => `${name}:${data.length}`).join(",");
+          artifactHashes.set(stageResult.stage_name, this.simpleHash(artifactData));
+        }
+      }
+    }
+    const verifiedStages = [];
+    const failedStages = [];
+    const stageConsensus = [];
+    for (const [stageName, results] of stageResults.entries()) {
+      const successCount = results.filter((r) => r.success).length;
+      const consensusAchieved = successCount >= request.required_consensus;
+      stageConsensus.push([stageName, successCount]);
+      if (consensusAchieved) {
+        verifiedStages.push(stageName);
+      } else {
+        failedStages.push(stageName);
+      }
+    }
+    const overallConsensus = failedStages.length === 0 && verifiedStages.length > 0;
+    const consensusCount = Math.min(...stageConsensus.map(([_, count]) => count));
+    return {
+      consensus_achieved: overallConsensus,
+      consensus_count: consensusCount,
+      verified_stages: verifiedStages,
+      failed_stages: failedStages,
+      stage_consensus: stageConsensus,
+      artifact_hashes: Array.from(artifactHashes.entries()),
+      execution_summary: {
+        total_cycles: totalCycles,
+        total_time: totalTime,
+        success_rate: totalStages > 0 ? successfulStages / totalStages : 0
+      }
+    };
+  }
+  /**
+   * Check quality gates for a repository
+   */
+  async checkQualityGates(repositoryId, request) {
+    const gates = this.qualityGates.get(repositoryId);
+    if (!gates || gates.length === 0) {
+      return true;
+    }
+    for (const gate of gates) {
+      const passed = await this.evaluateQualityGate(gate, request);
+      if (!passed && gate.required) {
+        return false;
+      }
+    }
+    return true;
+  }
+  /**
+   * Evaluate a single quality gate
+   */
+  async evaluateQualityGate(gate, request) {
+    try {
+      if ("TestCoverage" in gate.gate_type) {
+        return this.checkTestCoverage(gate.gate_type.TestCoverage.min_percentage, request);
+      } else if ("CodeQuality" in gate.gate_type) {
+        return this.checkCodeQuality(gate.gate_type.CodeQuality.max_violations, request);
+      } else if ("SecurityScan" in gate.gate_type) {
+        return this.checkSecurityScan(gate.gate_type.SecurityScan.max_vulnerabilities, request);
+      } else if ("PerformanceTest" in gate.gate_type) {
+        return this.checkPerformanceTest(gate.gate_type.PerformanceTest.max_response_time_ms, request);
+      } else if ("CustomCheck" in gate.gate_type) {
+        return this.checkCustomGate(gate.gate_type.CustomCheck, request);
+      }
+      return false;
+    } catch (error) {
+      console.log(`Quality gate ${gate.name} evaluation failed: ${error}`);
+      return false;
+    }
+  }
+  /**
+   * Quality gate check implementations
+   */
+  checkTestCoverage(minPercentage, request) {
+    for (const executorResult of request.executor_results) {
+      for (const stageResult of executorResult.stage_results) {
+        const coverageMetadata = stageResult.metadata.find(([key, _]) => key === "test_coverage");
+        if (coverageMetadata) {
+          const coverage = parseFloat(coverageMetadata[1]);
+          if (coverage >= minPercentage) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  checkCodeQuality(maxViolations, request) {
+    for (const executorResult of request.executor_results) {
+      for (const stageResult of executorResult.stage_results) {
+        const violationsMetadata = stageResult.metadata.find(([key, _]) => key === "quality_violations");
+        if (violationsMetadata) {
+          const violations = parseInt(violationsMetadata[1]);
+          if (violations <= maxViolations) {
+            return true;
+          }
+        }
+      }
+    }
+    return true;
+  }
+  checkSecurityScan(maxVulnerabilities, request) {
+    for (const executorResult of request.executor_results) {
+      for (const stageResult of executorResult.stage_results) {
+        const vulnMetadata = stageResult.metadata.find(([key, _]) => key === "security_vulnerabilities");
+        if (vulnMetadata) {
+          const vulnerabilities = parseInt(vulnMetadata[1]);
+          if (vulnerabilities <= maxVulnerabilities) {
+            return true;
+          }
+        }
+      }
+    }
+    return true;
+  }
+  checkPerformanceTest(maxResponseTimeMs, request) {
+    for (const executorResult of request.executor_results) {
+      for (const stageResult of executorResult.stage_results) {
+        const perfMetadata = stageResult.metadata.find(([key, _]) => key === "response_time_ms");
+        if (perfMetadata) {
+          const responseTime = parseInt(perfMetadata[1]);
+          if (responseTime <= maxResponseTimeMs) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  checkCustomGate(customCheck, request) {
+    console.log(`Custom check: ${customCheck.check_command}, expected: ${customCheck.expected_output}`);
+    return true;
+  }
+  /**
+   * Initiate deployment approval workflow
+   */
+  async initiateDeploymentApproval(pipelineId, approval) {
+    const updatedApproval = {
+      ...approval,
+      approval_status: { Pending: { pending_approvers: approval.required_approvers } }
+    };
+    this.deploymentApprovals.insert(pipelineId, updatedApproval);
+    if (approval.approval_timeout_hours > 0) {
+      const timeoutMs = Number(approval.approval_timeout_hours) * 60 * 60 * 1e3;
+      setTimer(BigInt(timeoutMs), () => {
+        this.expireDeploymentApproval(pipelineId);
+      });
+    }
+  }
+  /**
+   * Expire deployment approval
+   */
+  expireDeploymentApproval(pipelineId) {
+    const approval = this.deploymentApprovals.get(pipelineId);
+    if (approval && "Pending" in approval.approval_status) {
+      const expiredApproval = {
+        ...approval,
+        approval_status: { Expired: { expired_at: time() } }
+      };
+      this.deploymentApprovals.insert(pipelineId, expiredApproval);
+    }
+  }
+  /**
+   * Check if approval requirements are met
+   */
+  checkApprovalRequirements(approval, approvals) {
+    const approvedCount = approvals.filter((a) => a.approved).length;
+    const rejectedCount = approvals.filter((a) => !a.approved).length;
+    if (rejectedCount > 0 && approval.block_on_verification_failure) {
+      return false;
+    }
+    return approvedCount >= approval.min_approvals;
+  }
+  /**
+   * Generate verification ID
+   */
+  generateVerificationId(pipelineId) {
+    const timestamp = time();
+    return `verification_${pipelineId}_${timestamp}`;
+  }
+  /**
+   * Simple hash function for artifact comparison
+   */
+  simpleHash(input) {
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return hash.toString(16);
+  }
 };
 _init = __decoratorStart(null);
 __decorateElement(_init, 1, "init", _init_dec, VerificationCanister);
@@ -7189,6 +7725,12 @@ __decorateElement(_init, 1, "list_pipeline_templates", _list_pipeline_templates_
 __decorateElement(_init, 1, "execute_pipeline_template", _execute_pipeline_template_dec, VerificationCanister);
 __decorateElement(_init, 1, "get_pipeline_instance_status", _get_pipeline_instance_status_dec, VerificationCanister);
 __decorateElement(_init, 1, "list_active_pipeline_instances", _list_active_pipeline_instances_dec, VerificationCanister);
+__decorateElement(_init, 1, "verifyPipelineExecution", _verifyPipelineExecution_dec, VerificationCanister);
+__decorateElement(_init, 1, "setQualityGates", _setQualityGates_dec, VerificationCanister);
+__decorateElement(_init, 1, "configureDeploymentApproval", _configureDeploymentApproval_dec, VerificationCanister);
+__decorateElement(_init, 1, "approveDeployment", _approveDeployment_dec, VerificationCanister);
+__decorateElement(_init, 1, "getPipelineVerification", _getPipelineVerification_dec, VerificationCanister);
+__decorateElement(_init, 1, "listPipelineVerifications", _listPipelineVerifications_dec, VerificationCanister);
 __decoratorMetadata(_init, VerificationCanister);
 
 // <stdin>

@@ -235,6 +235,93 @@ type AgentStatus =
     | { Overloaded: null };
 
 // ============================================================================
+// PIPELINE EXECUTION TYPES (NEW)
+// ============================================================================
+
+const PipelineExecutionRequest = IDL.Record({
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    branch: IDL.Text,
+    trigger_type: IDL.Text,
+    source_url: IDL.Text,
+    timestamp: IDL.Nat64,
+    pipeline_config: IDL.Text // JSON-encoded pipeline configuration
+});
+
+type PipelineExecutionRequest = {
+    repository_id: string;
+    commit_hash: string;
+    branch: string;
+    trigger_type: string;
+    source_url: string;
+    timestamp: bigint;
+    pipeline_config: string;
+};
+
+const StageExecutionResult = IDL.Record({
+    stage_name: IDL.Text,
+    success: IDL.Bool,
+    start_time: IDL.Nat64,
+    end_time: IDL.Nat64,
+    exit_code: IDL.Int32,
+    stdout: IDL.Text,
+    stderr: IDL.Text,
+    artifacts: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(IDL.Nat8))), // filename -> binary data
+    cycles_consumed: IDL.Nat64,
+    memory_used: IDL.Nat32,
+    error_message: IDL.Opt(IDL.Text)
+});
+
+type StageExecutionResult = {
+    stage_name: string;
+    success: boolean;
+    start_time: bigint;
+    end_time: bigint;
+    exit_code: number;
+    stdout: string;
+    stderr: string;
+    artifacts: [string, number[]][];
+    cycles_consumed: bigint;
+    memory_used: number;
+    error_message: string | null;
+};
+
+const PipelineExecutionResult = IDL.Record({
+    pipeline_id: IDL.Text,
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    overall_success: IDL.Bool,
+    stages: IDL.Vec(StageExecutionResult),
+    start_time: IDL.Nat64,
+    end_time: IDL.Nat64,
+    total_cycles_consumed: IDL.Nat64,
+    total_memory_used: IDL.Nat32,
+    verification_required: IDL.Bool
+});
+
+type PipelineExecutionResult = {
+    pipeline_id: string;
+    repository_id: string;
+    commit_hash: string;
+    overall_success: boolean;
+    stages: StageExecutionResult[];
+    start_time: bigint;
+    end_time: bigint;
+    total_cycles_consumed: bigint;
+    total_memory_used: number;
+    verification_required: boolean;
+};
+
+const PipelineResult = IDL.Variant({
+    Ok: PipelineExecutionResult,
+    Err: BuildExecutorError
+});
+
+type PipelineResult = 
+    | { Ok: PipelineExecutionResult }
+    | { Err: BuildExecutorError };
+
+// ============================================================================
 // CANISTER STATE
 // ============================================================================
 
@@ -1180,5 +1267,426 @@ ${instructions}
         const successful_builds = items.filter(([_, result]) => result.success).length;
         
         return successful_builds / total_builds;
+    }
+
+    // ============================================================================
+    // PIPELINE EXECUTION METHODS (NEW)
+    // ============================================================================
+
+    /**
+     * Execute complete pipeline with multiple stages
+     */
+    @update([PipelineExecutionRequest])
+    async executePipeline(request: PipelineExecutionRequest): Promise<PipelineResult> {
+        try {
+            const caller = msgCaller();
+            const startTime = time();
+            const pipelineId = `pipeline_${request.repository_id}_${request.commit_hash}`;
+            
+            console.log(`Starting pipeline execution: ${pipelineId}`);
+
+            // Parse pipeline configuration
+            let pipelineConfig;
+            try {
+                pipelineConfig = JSON.parse(request.pipeline_config);
+            } catch (error) {
+                return {
+                    Err: { InvalidInput: `Invalid pipeline configuration: ${error}` }
+                };
+            }
+
+            // Initialize pipeline execution tracking
+            let totalCyclesConsumed = 0n;
+            let totalMemoryUsed = 0;
+            let overallSuccess = true;
+            const stageResults: StageExecutionResult[] = [];
+
+            // Step 1: Fetch source code
+            const sourceCode = await this.fetchSourceCode(request.source_url, request.commit_hash);
+            if (!sourceCode) {
+                return {
+                    Err: { InternalError: 'Failed to fetch source code' }
+                };
+            }
+
+            // Step 2: Execute stages in dependency order
+            const stageOrder = this.calculateStageExecutionOrder(pipelineConfig.stages);
+            
+            for (const stageName of stageOrder) {
+                const stage = pipelineConfig.stages.find((s: any) => s.name === stageName);
+                if (!stage) {
+                    overallSuccess = false;
+                    break;
+                }
+
+                console.log(`Executing stage: ${stageName}`);
+                
+                const stageResult = await this.executeStage(
+                    stage,
+                    sourceCode,
+                    this.getStageArtifacts(stageResults, stage.depends_on)
+                );
+
+                stageResults.push(stageResult);
+                totalCyclesConsumed += stageResult.cycles_consumed;
+                totalMemoryUsed = Math.max(totalMemoryUsed, stageResult.memory_used);
+
+                if (!stageResult.success) {
+                    console.log(`Stage failed: ${stageName} - ${stageResult.error_message}`);
+                    overallSuccess = false;
+                    break;
+                }
+            }
+
+            const endTime = time();
+
+            const result: PipelineExecutionResult = {
+                pipeline_id: pipelineId,
+                repository_id: request.repository_id,
+                commit_hash: request.commit_hash,
+                overall_success: overallSuccess,
+                stages: stageResults,
+                start_time: startTime,
+                end_time: endTime,
+                total_cycles_consumed: totalCyclesConsumed,
+                total_memory_used: totalMemoryUsed,
+                verification_required: overallSuccess && stageResults.length > 1
+            };
+
+            // Store pipeline execution result
+            this.storePipelineResult(pipelineId, result);
+
+            console.log(`Pipeline execution completed: ${pipelineId}, Success: ${overallSuccess}`);
+            
+            return { Ok: result };
+
+        } catch (error) {
+            console.log(`Pipeline execution error: ${error}`);
+            return {
+                Err: { InternalError: `Pipeline execution failed: ${error}` }
+            };
+        }
+    }
+
+    /**
+     * Execute a single pipeline stage
+     */
+    private async executeStage(
+        stage: any,
+        sourceCode: Uint8Array,
+        artifacts: Map<string, Uint8Array>
+    ): Promise<StageExecutionResult> {
+        const startTime = time();
+        const startCycles = performanceCounter(1); // Instruction counter
+
+        try {
+            // Setup execution environment
+            const workDir = await this.setupStageWorkspace(stage, sourceCode, artifacts);
+            
+            // Execute stage commands
+            const executionResults = await this.executeStageCommands(stage, workDir);
+            
+            // Collect artifacts
+            const stageArtifacts = await this.collectStageArtifacts(stage, workDir);
+            
+            // Cleanup workspace
+            await this.cleanupWorkspace(workDir);
+
+            const endTime = time();
+            const endCycles = performanceCounter(1);
+            const cyclesConsumed = endCycles - startCycles;
+
+            return {
+                stage_name: stage.name,
+                success: executionResults.success,
+                start_time: startTime,
+                end_time: endTime,
+                exit_code: executionResults.exit_code,
+                stdout: executionResults.stdout,
+                stderr: executionResults.stderr,
+                artifacts: stageArtifacts,
+                cycles_consumed: BigInt(cyclesConsumed),
+                memory_used: executionResults.memory_used,
+                error_message: executionResults.error_message
+            };
+
+        } catch (error) {
+            const endTime = time();
+            const endCycles = performanceCounter(1);
+            
+            return {
+                stage_name: stage.name,
+                success: false,
+                start_time: startTime,
+                end_time: endTime,
+                exit_code: -1,
+                stdout: '',
+                stderr: String(error),
+                artifacts: [],
+                cycles_consumed: BigInt(endCycles - startCycles),
+                memory_used: 0,
+                error_message: String(error)
+            };
+        }
+    }
+
+    /**
+     * Fetch source code from repository
+     */
+    private async fetchSourceCode(sourceUrl: string, commitHash: string): Promise<Uint8Array | null> {
+        try {
+            // In a real implementation, this would:
+            // 1. Clone the repository
+            // 2. Checkout the specific commit
+            // 3. Create a tar/zip archive of the source
+            // 4. Return as binary data
+            
+            // For now, return mock source code
+            console.log(`Fetching source code from ${sourceUrl} at commit ${commitHash}`);
+            
+            // Mock implementation - in reality this would use HTTP calls or IC HTTP outcalls
+            const mockSource = JSON.stringify({
+                repository_url: sourceUrl,
+                commit_hash: commitHash,
+                files: {
+                    'src/main.mo': 'import Debug "mo:base/Debug"; Debug.print("Hello World");',
+                    'dfx.json': '{"canisters": {"main": {"type": "motoko", "main": "src/main.mo"}}}'
+                }
+            });
+            
+            return new TextEncoder().encode(mockSource);
+            
+        } catch (error) {
+            console.log(`Failed to fetch source code: ${error}`);
+            return null;
+        }
+    }
+
+    /**
+     * Calculate stage execution order based on dependencies
+     */
+    private calculateStageExecutionOrder(stages: any[]): string[] {
+        const stageMap = new Map<string, any>();
+        const order: string[] = [];
+        const visited = new Set<string>();
+        const visiting = new Set<string>();
+
+        // Build stage map
+        for (const stage of stages) {
+            stageMap.set(stage.name, stage);
+        }
+
+        // Topological sort with dependency resolution
+        const visit = (stageName: string): boolean => {
+            if (visiting.has(stageName)) {
+                throw new Error(`Circular dependency detected: ${stageName}`);
+            }
+            if (visited.has(stageName)) {
+                return true;
+            }
+
+            visiting.add(stageName);
+            const stage = stageMap.get(stageName);
+            
+            if (stage && stage.depends_on) {
+                for (const dependency of stage.depends_on) {
+                    if (!visit(dependency)) {
+                        return false;
+                    }
+                }
+            }
+
+            visiting.delete(stageName);
+            visited.add(stageName);
+            order.push(stageName);
+            return true;
+        };
+
+        // Visit all stages
+        for (const stage of stages) {
+            if (!visited.has(stage.name)) {
+                visit(stage.name);
+            }
+        }
+
+        return order;
+    }
+
+    /**
+     * Get artifacts from previous stages
+     */
+    private getStageArtifacts(stageResults: StageExecutionResult[], dependencies: string[]): Map<string, Uint8Array> {
+        const artifacts = new Map<string, Uint8Array>();
+        
+        for (const dependency of dependencies || []) {
+            const dependencyResult = stageResults.find(r => r.stage_name === dependency);
+            if (dependencyResult) {
+                for (const [filename, data] of dependencyResult.artifacts) {
+                    artifacts.set(filename, new Uint8Array(data));
+                }
+            }
+        }
+
+        return artifacts;
+    }
+
+    /**
+     * Setup workspace for stage execution
+     */
+    private async setupStageWorkspace(
+        stage: any,
+        sourceCode: Uint8Array,
+        artifacts: Map<string, Uint8Array>
+    ): Promise<string> {
+        // In a real implementation, this would:
+        // 1. Create temporary directory
+        // 2. Extract source code
+        // 3. Copy artifacts from previous stages
+        // 4. Set up stage-specific environment
+        
+        const workDir = `/tmp/stage_${stage.name}_${Date.now()}`;
+        console.log(`Setting up workspace: ${workDir}`);
+        
+        // Mock setup - in reality would use file system operations
+        return workDir;
+    }
+
+    /**
+     * Execute stage commands
+     */
+    private async executeStageCommands(stage: any, workDir: string): Promise<{
+        success: boolean;
+        exit_code: number;
+        stdout: string;
+        stderr: string;
+        memory_used: number;
+        error_message: string | null;
+    }> {
+        try {
+            console.log(`Executing commands for stage: ${stage.name}`);
+            
+            let combinedStdout = '';
+            let combinedStderr = '';
+            let success = true;
+            
+            for (const command of stage.commands) {
+                console.log(`Running command: ${command}`);
+                
+                // Mock command execution
+                // In reality, this would execute the command in a sandboxed environment
+                if (command.includes('dfx build')) {
+                    combinedStdout += 'Building canisters...\nBuild completed successfully.\n';
+                } else if (command.includes('test')) {
+                    combinedStdout += 'Running tests...\nAll tests passed.\n';
+                } else if (command.includes('deploy')) {
+                    combinedStdout += 'Deploying to IC...\nDeployment successful.\n';
+                } else {
+                    combinedStdout += `Executed: ${command}\n`;
+                }
+            }
+
+            return {
+                success: success,
+                exit_code: success ? 0 : 1,
+                stdout: combinedStdout,
+                stderr: combinedStderr,
+                memory_used: 128, // Mock memory usage in MB
+                error_message: success ? null : 'Command execution failed'
+            };
+
+        } catch (error) {
+            return {
+                success: false,
+                exit_code: -1,
+                stdout: '',
+                stderr: String(error),
+                memory_used: 0,
+                error_message: String(error)
+            };
+        }
+    }
+
+    /**
+     * Collect stage artifacts
+     */
+    private async collectStageArtifacts(stage: any, workDir: string): Promise<[string, number[]][]> {
+        const artifacts: [string, number[]][] = [];
+        
+        try {
+            for (const artifactPattern of stage.artifacts || []) {
+                // Mock artifact collection
+                if (artifactPattern.includes('.wasm')) {
+                    const mockWasm = new TextEncoder().encode('mock wasm binary');
+                    artifacts.push([`${stage.name}.wasm`, Array.from(mockWasm)]);
+                } else if (artifactPattern.includes('.xml')) {
+                    const mockXml = new TextEncoder().encode('<testsuite><testcase name="test1" status="passed"/></testsuite>');
+                    artifacts.push(['test-results.xml', Array.from(mockXml)]);
+                }
+            }
+        } catch (error) {
+            console.log(`Failed to collect artifacts: ${error}`);
+        }
+
+        return artifacts;
+    }
+
+    /**
+     * Cleanup workspace
+     */
+    private async cleanupWorkspace(workDir: string): Promise<void> {
+        try {
+            console.log(`Cleaning up workspace: ${workDir}`);
+            // In reality, would remove temporary directory and files
+        } catch (error) {
+            console.log(`Failed to cleanup workspace: ${error}`);
+        }
+    }
+
+    /**
+     * Store pipeline execution result
+     */
+    private storePipelineResult(pipelineId: string, result: PipelineExecutionResult): void {
+        // Store in a separate map for pipeline results
+        // For now, store as a build result for backward compatibility
+        const buildResult: ExecuteBuildResult = {
+            success: result.overall_success,
+            hash: result.commit_hash,
+            error: result.overall_success ? '' : 'Pipeline execution failed',
+            cycles_consumed: result.total_cycles_consumed,
+            build_time: result.end_time - result.start_time,
+            artifact_size: result.total_memory_used
+        };
+
+        this.buildHistory.set(pipelineId, buildResult);
+    }
+
+    /**
+     * Get pipeline execution result
+     */
+    @query([IDL.Text])
+    getPipelineResult(pipelineId: string): PipelineResult {
+        const result = this.buildHistory.get(pipelineId);
+        if (!result) {
+            return {
+                Err: { NotFound: `Pipeline result not found: ${pipelineId}` }
+            };
+        }
+
+        // Convert back to pipeline result format
+        // This is a simplified version - in reality you'd store the full pipeline result
+        const pipelineResult: PipelineExecutionResult = {
+            pipeline_id: pipelineId,
+            repository_id: 'unknown', // Would be stored separately
+            commit_hash: result.hash,
+            overall_success: result.success,
+            stages: [], // Would be stored separately
+            start_time: 0n, // Would be stored separately
+            end_time: result.build_time,
+            total_cycles_consumed: result.cycles_consumed,
+            total_memory_used: result.artifact_size,
+            verification_required: result.success
+        };
+
+        return { Ok: pipelineResult };
     }
 }

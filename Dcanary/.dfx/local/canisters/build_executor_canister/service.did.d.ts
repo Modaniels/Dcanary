@@ -25,6 +25,20 @@ export interface _SERVICE {
           { 'InternalError' : string }
       }
   >,
+  'executePipeline' : ActorMethod<
+    [
+      {
+        'branch' : string,
+        'pipeline_config' : string,
+        'repository_id' : string,
+        'source_url' : string,
+        'timestamp' : bigint,
+        'commit_hash' : string,
+        'trigger_type' : string,
+      },
+    ],
+    undefined
+  >,
   'getAgentCapabilities' : ActorMethod<
     [],
     {
@@ -88,6 +102,7 @@ export interface _SERVICE {
           { 'InternalError' : string }
       }
   >,
+  'getPipelineResult' : ActorMethod<[string], undefined>,
   'getResourceUsage' : ActorMethod<
     [],
     {

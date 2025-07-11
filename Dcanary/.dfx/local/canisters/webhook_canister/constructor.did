@@ -1,6 +1,9 @@
 service : () -> {
+  addBuildExecutor : (principal) -> ();
+  getBuildQueueStatus : () -> () query;
   getBuildTrigger : (text) -> () query;
   getBuildTriggers : (text) -> () query;
+  getPipelineHistory : (text) -> () query;
   getRepository : (text) -> () query;
   handleWebhookEvent : (text, text, text, text, opt text) -> ();
   listRepositoriesByProject : (text) -> () query;
@@ -14,6 +17,8 @@ service : () -> {
       bool,
       vec text,
     ) -> ();
+  setPipelineConfigCanister : (principal) -> ();
   setVerificationCanister : (principal) -> ();
+  triggerPipelineExecution : (text, text, text, text, text, text) -> ();
   updateRepository : (text, bool, bool, vec text) -> ();
 }
