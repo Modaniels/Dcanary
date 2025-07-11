@@ -52,6 +52,58 @@ type RepositoryResult =
     | { Err: RepositoryError };
 
 // ============================================================================
+// ENHANCED PIPELINE INTEGRATION TYPES
+// ============================================================================
+
+const PipelineExecutionRequest = IDL.Record({
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    branch: IDL.Text,
+    trigger_type: IDL.Text,
+    source_url: IDL.Text,
+    timestamp: IDL.Nat64
+});
+
+type PipelineExecutionRequest = {
+    repository_id: string;
+    commit_hash: string;
+    branch: string;
+    trigger_type: string;
+    source_url: string;
+    timestamp: bigint;
+};
+
+const PipelineExecutionResult = IDL.Variant({
+    Ok: IDL.Record({
+        pipeline_id: IDL.Text,
+        build_id: IDL.Text,
+        executor_ids: IDL.Vec(IDL.Principal)
+    }),
+    Err: IDL.Text
+});
+
+type PipelineExecutionResult = 
+    | { Ok: { pipeline_id: string; build_id: string; executor_ids: Principal[] } }
+    | { Err: string };
+
+// Build queue for managing concurrent builds
+const BuildQueueEntry = IDL.Record({
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    priority: IDL.Nat8,
+    queued_at: IDL.Nat64,
+    estimated_duration: IDL.Opt(IDL.Nat64)
+});
+
+type BuildQueueEntry = {
+    repository_id: string;
+    commit_hash: string;
+    priority: number;
+    queued_at: bigint;
+    estimated_duration: bigint | null;
+};
+
+// ============================================================================
 // WEBHOOK HANDLER CANISTER
 // ============================================================================
 
@@ -61,6 +113,15 @@ export default class WebhookHandlerCanister {
     
     // Stable storage for build triggers
     private buildTriggers = new StableBTreeMap<string, BuildTrigger>(1);
+    
+    // NEW: Build queue for managing concurrent executions
+    private buildQueue = new StableBTreeMap<string, BuildQueueEntry>(2);
+    
+    // NEW: Pipeline configuration canister reference
+    private pipelineConfigCanisterId: Principal | null = null;
+    
+    // NEW: Build executor pool references
+    private buildExecutorPool: Principal[] = [];
     
     // Admin principal
     private adminPrincipal: Principal = Principal.fromText('2vxsx-fae');
@@ -220,6 +281,35 @@ export default class WebhookHandlerCanister {
         return repositories;
     }
 
+    /**
+     * Get build triggers for a project
+     */
+    @query([IDL.Text])
+    getBuildTriggers(projectId: string): BuildTrigger[] {
+        const triggers: BuildTrigger[] = [];
+        
+        for (let i = 0; i < this.buildTriggers.len(); i++) {
+            const items = this.buildTriggers.items(i, 1);
+            if (items.length > 0) {
+                const [_, trigger] = items[0];
+                if (trigger.project_id === projectId) {
+                    triggers.push(trigger);
+                }
+            }
+        }
+        
+        return triggers.sort((a, b) => Number(b.triggered_at - a.triggered_at));
+    }
+
+    /**
+     * Get build trigger by ID
+     */
+    @query([IDL.Text])
+    getBuildTrigger(triggerId: string): BuildTrigger | null {
+        const trigger = this.buildTriggers.get(triggerId);
+        return trigger === undefined ? null : trigger;
+    }
+
     // ============================================================================
     // WEBHOOK HANDLERS (Simplified without crypto verification)
     // ============================================================================
@@ -376,32 +466,170 @@ export default class WebhookHandlerCanister {
         return true;
     }
 
+    // ============================================================================
+    // ENHANCED PIPELINE ROUTING METHODS
+    // ============================================================================
+
     /**
-     * Get build triggers for a project
+     * Set pipeline configuration canister
      */
-    @query([IDL.Text])
-    getBuildTriggers(projectId: string): BuildTrigger[] {
-        const triggers: BuildTrigger[] = [];
+    @update([IDL.Principal])
+    setPipelineConfigCanister(principal: Principal): boolean {
+        const caller = msgCaller();
         
-        for (let i = 0; i < this.buildTriggers.len(); i++) {
-            const items = this.buildTriggers.items(i, 1);
-            if (items.length > 0) {
-                const [_, trigger] = items[0];
-                if (trigger.project_id === projectId) {
-                    triggers.push(trigger);
-                }
-            }
+        if (caller.toText() !== this.adminPrincipal.toText()) {
+            trap('Only admin can set pipeline config canister');
         }
         
-        return triggers.sort((a, b) => Number(b.triggered_at - a.triggered_at));
+        this.pipelineConfigCanisterId = principal;
+        return true;
     }
 
     /**
-     * Get build trigger by ID
+     * Add build executor to the pool
+     */
+    @update([IDL.Principal])
+    addBuildExecutor(principal: Principal): boolean {
+        const caller = msgCaller();
+        
+        if (caller.toText() !== this.adminPrincipal.toText()) {
+            trap('Only admin can add build executors');
+        }
+        
+        if (!this.buildExecutorPool.includes(principal)) {
+            this.buildExecutorPool.push(principal);
+        }
+        return true;
+    }
+
+    /**
+     * Enhanced webhook handler that routes to pipeline execution
+     */
+    @update([IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text])
+    async triggerPipelineExecution(
+        repositoryId: string,
+        eventType: string,
+        branch: string,
+        commitSha: string,
+        commitMessage: string,
+        sourceUrl: string
+    ): Promise<PipelineExecutionResult> {
+        try {
+            // 1. Validate repository exists
+            const repo = this.repositories.get(repositoryId);
+            if (!repo) {
+                return { Err: `Repository ${repositoryId} not found` };
+            }
+
+            // 2. Check if pipeline config canister is set
+            if (!this.pipelineConfigCanisterId) {
+                return { Err: 'Pipeline configuration canister not set' };
+            }
+
+            // 3. Get pipeline configuration from config canister
+            let pipelineConfig;
+            try {
+                pipelineConfig = await call(this.pipelineConfigCanisterId, 'get_pipeline_config', {
+                    paramIdlTypes: [IDL.Text],
+                    returnIdlType: IDL.Text, // This should be the actual pipeline config IDL type
+                    args: [repositoryId]
+                });
+            } catch (error) {
+                return { Err: `Failed to get pipeline config: ${error}` };
+            }
+
+            // 4. Create pipeline execution request
+            const executionRequest: PipelineExecutionRequest = {
+                repository_id: repositoryId,
+                commit_hash: commitSha,
+                branch: branch,
+                trigger_type: eventType,
+                source_url: sourceUrl,
+                timestamp: time()
+            };
+
+            // 5. Queue the build if executors are busy
+            const queueEntry: BuildQueueEntry = {
+                repository_id: repositoryId,
+                commit_hash: commitSha,
+                priority: 1, // Normal priority
+                queued_at: time(),
+                estimated_duration: null
+            };
+
+            const queueId = `${repositoryId}_${commitSha}`;
+            this.buildQueue.insert(queueId, queueEntry);
+
+            // 6. Select available build executor
+            const selectedExecutor = this.selectBuildExecutor();
+            if (!selectedExecutor) {
+                return { Err: 'No build executors available' };
+            }
+
+            // 7. Trigger pipeline execution on selected executor
+            let buildResult;
+            try {
+                buildResult = await call(selectedExecutor, 'execute_pipeline', {
+                    paramIdlTypes: [PipelineExecutionRequest],
+                    returnIdlType: IDL.Text, // This should be the actual build result IDL type
+                    args: [executionRequest]
+                });
+            } catch (error) {
+                // Remove from queue on failure
+                this.buildQueue.delete(queueId);
+                return { Err: `Pipeline execution failed: ${error}` };
+            }
+
+            // 8. Remove from queue on success
+            this.buildQueue.delete(queueId);
+
+            // 9. Create build trigger record (legacy compatibility)
+            const buildTrigger = this.createBuildTrigger(repo, eventType, branch, commitSha, commitMessage);
+            const triggerId = this.generateTriggerId();
+            this.buildTriggers.insert(triggerId, buildTrigger);
+
+            // 10. Return success result
+            return {
+                Ok: {
+                    pipeline_id: `pipeline_${repositoryId}_${commitSha}`,
+                    build_id: triggerId,
+                    executor_ids: [selectedExecutor]
+                }
+            };
+
+        } catch (error) {
+            return { Err: `Pipeline trigger failed: ${error}` };
+        }
+    }
+
+    /**
+     * Get build queue status
+     */
+    @query([])
+    getBuildQueueStatus(): Array<[string, BuildQueueEntry]> {
+        return this.buildQueue.items();
+    }
+
+    /**
+     * Get pipeline execution history
      */
     @query([IDL.Text])
-    getBuildTrigger(triggerId: string): BuildTrigger | null {
-        const trigger = this.buildTriggers.get(triggerId);
-        return trigger === undefined ? null : trigger;
+    getPipelineHistory(repositoryId: string): Array<[string, BuildTrigger]> {
+        const triggers = this.buildTriggers.items();
+        return triggers.filter(([_, trigger]) => trigger.repository_id === repositoryId);
+    }
+
+    /**
+     * Select an available build executor (simple round-robin for now)
+     */
+    private selectBuildExecutor(): Principal | null {
+        if (this.buildExecutorPool.length === 0) {
+            return null;
+        }
+
+        // Simple round-robin selection
+        const now = Number(time());
+        const index = now % this.buildExecutorPool.length;
+        return this.buildExecutorPool[index];
     }
 }

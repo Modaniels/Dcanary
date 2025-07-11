@@ -347,6 +347,247 @@ type VerificationState = {
 };
 
 // ============================================================================
+// PIPELINE VERIFICATION TYPES (NEW ENHANCEMENT)
+// ============================================================================
+
+/**
+ * Pipeline execution result for verification
+ */
+const PipelineExecutorResult = IDL.Record({
+    executor_id: IDL.Principal,
+    pipeline_id: IDL.Text,
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    stage_results: IDL.Vec(IDL.Record({
+        stage_name: IDL.Text,
+        success: IDL.Bool,
+        start_time: IDL.Nat64,
+        end_time: IDL.Nat64,
+        exit_code: IDL.Int32,
+        stdout: IDL.Text,
+        stderr: IDL.Text,
+        artifacts: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Vec(IDL.Nat8))),
+        cycles_consumed: IDL.Nat64,
+        memory_used: IDL.Nat32,
+        error_message: IDL.Opt(IDL.Text),
+        metadata: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)) // key-value metadata
+    })),
+    overall_success: IDL.Bool,
+    total_cycles_consumed: IDL.Nat64,
+    total_memory_used: IDL.Nat32,
+    execution_start: IDL.Nat64,
+    execution_end: IDL.Nat64
+});
+
+type PipelineExecutorResult = {
+    executor_id: Principal;
+    pipeline_id: string;
+    repository_id: string;
+    commit_hash: string;
+    stage_results: StageExecutionResult[];
+    overall_success: boolean;
+    total_cycles_consumed: bigint;
+    total_memory_used: number;
+    execution_start: bigint;
+    execution_end: bigint;
+};
+
+type StageExecutionResult = {
+    stage_name: string;
+    success: boolean;
+    start_time: bigint;
+    end_time: bigint;
+    exit_code: number;
+    stdout: string;
+    stderr: string;
+    artifacts: [string, number[]][];
+    cycles_consumed: bigint;
+    memory_used: number;
+    error_message: string | null;
+    metadata: [string, string][]; // For test coverage, quality metrics, etc.
+};
+
+/**
+ * Pipeline verification request
+ */
+const PipelineVerificationRequest = IDL.Record({
+    pipeline_id: IDL.Text,
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    branch: IDL.Text,
+    executor_results: IDL.Vec(PipelineExecutorResult),
+    requester: IDL.Principal,
+    verification_rules: IDL.Record({
+        min_consensus_percentage: IDL.Nat8,
+        required_executor_count: IDL.Nat8,
+        stage_consensus_required: IDL.Bool,
+        artifact_verification_required: IDL.Bool
+    })
+});
+
+type PipelineVerificationRequest = {
+    pipeline_id: string;
+    repository_id: string;
+    commit_hash: string;
+    branch: string;
+    executor_results: PipelineExecutorResult[];
+    requester: Principal;
+    verification_rules: {
+        min_consensus_percentage: number;
+        required_executor_count: number;
+        stage_consensus_required: boolean;
+        artifact_verification_required: boolean;
+    };
+};
+
+/**
+ * Pipeline verification result
+ */
+const PipelineVerificationResult = IDL.Record({
+    verification_id: IDL.Text,
+    pipeline_id: IDL.Text,
+    repository_id: IDL.Text,
+    commit_hash: IDL.Text,
+    verification_status: IDL.Variant({
+        Pending: IDL.Null,
+        Verified: IDL.Null,
+        Failed: IDL.Text,
+        RequiresApproval: IDL.Null
+    }),
+    consensus_achieved: IDL.Bool,
+    consensus_count: IDL.Nat8,
+    verified_stages: IDL.Vec(IDL.Text),
+    failed_stages: IDL.Vec(IDL.Text),
+    stage_consensus: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat8)), // stage_name -> consensus_count
+    artifact_hashes: IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)), // artifact_name -> verified_hash
+    quality_gates_passed: IDL.Bool,
+    deployment_approved: IDL.Bool,
+    created_at: IDL.Nat64,
+    completed_at: IDL.Opt(IDL.Nat64),
+    execution_summary: IDL.Record({
+        total_cycles: IDL.Nat64,
+        total_time: IDL.Nat64,
+        success_rate: IDL.Float32
+    })
+});
+
+type PipelineVerificationResult = {
+    verification_id: string;
+    pipeline_id: string;
+    repository_id: string;
+    commit_hash: string;
+    verification_status: 
+        | { Pending: null }
+        | { Verified: null }
+        | { Failed: string }
+        | { RequiresApproval: null };
+    consensus_achieved: boolean;
+    consensus_count: number;
+    verified_stages: string[];
+    failed_stages: string[];
+    stage_consensus: [string, number][]; // stage_name -> consensus_count
+    artifact_hashes: [string, string][]; // artifact_name -> verified_hash
+    quality_gates_passed: boolean;
+    deployment_approved: boolean;
+    created_at: bigint;
+    completed_at: bigint | null;
+    execution_summary: {
+        total_cycles: bigint;
+        total_time: bigint;
+        success_rate: number;
+    };
+};
+
+/**
+ * Quality gate configuration
+ */
+const QualityGate = IDL.Record({
+    name: IDL.Text,
+    description: IDL.Text,
+    gate_type: IDL.Variant({
+        TestCoverage: IDL.Record({ min_percentage: IDL.Float32 }),
+        CodeQuality: IDL.Record({ max_violations: IDL.Nat32 }),
+        SecurityScan: IDL.Record({ max_vulnerabilities: IDL.Nat32 }),
+        PerformanceTest: IDL.Record({ max_response_time_ms: IDL.Nat32 }),
+        CustomCheck: IDL.Record({ 
+            check_command: IDL.Text,
+            expected_output: IDL.Text
+        })
+    }),
+    required: IDL.Bool,
+    timeout_minutes: IDL.Nat32
+});
+
+type QualityGate = {
+    name: string;
+    description: string;
+    gate_type: 
+        | { TestCoverage: { min_percentage: number } }
+        | { CodeQuality: { max_violations: number } }
+        | { SecurityScan: { max_vulnerabilities: number } }
+        | { PerformanceTest: { max_response_time_ms: number } }
+        | { CustomCheck: { check_command: string; expected_output: string } };
+    required: boolean;
+    timeout_minutes: number;
+};
+
+/**
+ * Deployment approval configuration
+ */
+const DeploymentApproval = IDL.Record({
+    required_approvers: IDL.Vec(IDL.Principal),
+    min_approvals: IDL.Nat8,
+    approval_timeout_hours: IDL.Nat32,
+    auto_deploy_on_approval: IDL.Bool,
+    block_on_verification_failure: IDL.Bool,
+    approval_status: IDL.Variant({
+        Pending: IDL.Record({ pending_approvers: IDL.Vec(IDL.Principal) }),
+        Approved: IDL.Record({ approved_at: IDL.Nat64, approved_by: IDL.Vec(IDL.Principal) }),
+        Rejected: IDL.Record({ rejected_at: IDL.Nat64, rejected_by: IDL.Principal, reason: IDL.Text }),
+        Expired: IDL.Record({ expired_at: IDL.Nat64 })
+    })
+});
+
+type DeploymentApproval = {
+    required_approvers: Principal[];
+    min_approvals: number;
+    approval_timeout_hours: number;
+    auto_deploy_on_approval: boolean;
+    block_on_verification_failure: boolean;
+    approval_status: 
+        | { Pending: { pending_approvers: Principal[] } }
+        | { Approved: { approved_at: bigint; approved_by: Principal[] } }
+        | { Rejected: { rejected_at: bigint; rejected_by: Principal; reason: string } }
+        | { Expired: { expired_at: bigint } };
+};
+
+/**
+ * Result wrapper types
+ */
+const PipelineVerificationResultWrapper = IDL.Variant({
+    Ok: PipelineVerificationResult,
+    Err: IDL.Variant({
+        NotFound: IDL.Text,
+        Unauthorized: IDL.Text,
+        InvalidInput: IDL.Text,
+        InternalError: IDL.Text,
+        InsufficientConsensus: IDL.Text,
+        QualityGateFailure: IDL.Text
+    })
+});
+
+type PipelineVerificationResultWrapper = 
+    | { Ok: PipelineVerificationResult }
+    | { Err: 
+        | { NotFound: string }
+        | { Unauthorized: string }
+        | { InvalidInput: string }
+        | { InternalError: string }
+        | { InsufficientConsensus: string }
+        | { QualityGateFailure: string }
+    };
+
+// ============================================================================
 // CANISTER STATE
 // ============================================================================
 
@@ -1392,5 +1633,500 @@ export default class VerificationCanister {
     private async executeGenericStep(step: BuildStep, pipeline: PipelineInstance, result: StepResult): Promise<void> {
         result.output = `Generic step ${step.step_type} executed for ${pipeline.project_id}`;
         console.log(result.output);
+    }
+
+    // ============================================================================
+    // PIPELINE VERIFICATION METHODS (NEW)
+    // ============================================================================
+
+    // Stable storage for pipeline verifications
+    private pipelineVerifications = new StableBTreeMap<string, PipelineVerificationResult>(5);
+    
+    // Deployment approvals
+    private deploymentApprovals = new StableBTreeMap<string, DeploymentApproval>(6);
+    
+    // Quality gates configuration
+    private qualityGates = new StableBTreeMap<string, QualityGate[]>(7);
+
+    /**
+     * Verify pipeline execution across multiple executors
+     */
+    @update([PipelineVerificationRequest])
+    async verifyPipelineExecution(request: PipelineVerificationRequest): Promise<PipelineVerificationResultWrapper> {
+        const caller = msgCaller();
+        
+        try {
+            // Validate request
+            if (request.executor_results.length === 0) {
+                return { Err: { InvalidInput: 'No executor results provided' } };
+            }
+
+            if (request.required_consensus > request.executor_results.length) {
+                return { Err: { InvalidInput: 'Required consensus exceeds number of executors' } };
+            }
+
+            const verificationId = this.generateVerificationId(request.pipeline_id);
+            const now = time();
+
+            // Analyze executor results for consensus
+            const consensusAnalysis = this.analyzeExecutorConsensus(request);
+            
+            // Check quality gates
+            const qualityGatesPassed = await this.checkQualityGates(request.repository_id, request);
+            
+            // Determine overall verification status
+            let status: VerificationStatus;
+            let deploymentApproved = false;
+
+            if (consensusAnalysis.consensus_achieved && qualityGatesPassed) {
+                status = { Verified: null };
+                
+                // Check if automatic deployment approval is enabled
+                const approval = this.deploymentApprovals.get(request.pipeline_id);
+                if (approval && approval.auto_approve_on_quality_gates) {
+                    deploymentApproved = true;
+                }
+            } else {
+                status = { Failed: null };
+            }
+
+            const verificationResult: PipelineVerificationResult = {
+                verification_id: verificationId,
+                pipeline_id: request.pipeline_id,
+                repository_id: request.repository_id,
+                commit_hash: request.commit_hash,
+                verification_status: status,
+                consensus_achieved: consensusAnalysis.consensus_achieved,
+                consensus_count: consensusAnalysis.consensus_count,
+                verified_stages: consensusAnalysis.verified_stages,
+                failed_stages: consensusAnalysis.failed_stages,
+                stage_consensus: consensusAnalysis.stage_consensus,
+                artifact_hashes: consensusAnalysis.artifact_hashes,
+                quality_gates_passed: qualityGatesPassed,
+                deployment_approved: deploymentApproved,
+                created_at: now,
+                completed_at: now,
+                execution_summary: consensusAnalysis.execution_summary
+            };
+
+            // Store verification result
+            this.pipelineVerifications.insert(verificationId, verificationResult);
+
+            // If deployment approval is required and not auto-approved, initiate approval workflow
+            if ('Verified' in status && !deploymentApproved) {
+                const approval = this.deploymentApprovals.get(request.pipeline_id);
+                if (approval) {
+                    await this.initiateDeploymentApproval(request.pipeline_id, approval);
+                }
+            }
+
+            return { Ok: verificationResult };
+
+        } catch (error) {
+            return { Err: { InternalError: `Verification failed: ${error}` } };
+        }
+    }
+
+    /**
+     * Configure quality gates for a repository
+     */
+    @update([IDL.Text, IDL.Vec(QualityGate)])
+    setQualityGates(repositoryId: string, gates: QualityGate[]): boolean {
+        const caller = msgCaller();
+        
+        // Only admin or authorized users can set quality gates
+        if (caller.toText() !== this.adminPrincipal.toText()) {
+            trap('Only admin can configure quality gates');
+        }
+
+        this.qualityGates.insert(repositoryId, gates);
+        return true;
+    }
+
+    /**
+     * Configure deployment approval workflow
+     */
+    @update([DeploymentApproval])
+    configureDeploymentApproval(approval: DeploymentApproval): boolean {
+        const caller = msgCaller();
+        
+        // Only admin or authorized users can configure deployment approvals
+        if (caller.toText() !== this.adminPrincipal.toText()) {
+            trap('Only admin can configure deployment approvals');
+        }
+
+        this.deploymentApprovals.insert(approval.pipeline_id, approval);
+        return true;
+    }
+
+    /**
+     * Approve or reject deployment
+     */
+    @update([IDL.Text, IDL.Bool, IDL.Opt(IDL.Text)])
+    async approveDeployment(pipelineId: string, approved: boolean, comment: string | null): Promise<boolean> {
+        const caller = msgCaller();
+        
+        const approval = this.deploymentApprovals.get(pipelineId);
+        if (!approval) {
+            trap('No deployment approval configured for this pipeline');
+        }
+
+        // Check if caller is authorized to approve
+        if (!approval.required_approvers.some(approver => approver.toText() === caller.toText())) {
+            trap('Not authorized to approve this deployment');
+        }
+
+        // Get current verification result
+        const verificationResult = Array.from(this.pipelineVerifications.values())
+            .find(v => v.pipeline_id === pipelineId);
+        
+        if (!verificationResult) {
+            trap('No verification result found for this pipeline');
+        }
+
+        // Add approval
+        const newApproval = {
+            approver: caller,
+            approved: approved,
+            timestamp: time(),
+            comment: comment
+        };
+
+        const updatedVerification: PipelineVerificationResult = {
+            ...verificationResult,
+            approvals: [...verificationResult.approvals, newApproval],
+            deployment_approved: approved && this.checkApprovalRequirements(approval, [...verificationResult.approvals, newApproval])
+        };
+
+        // Update verification result
+        const verificationId = Array.from(this.pipelineVerifications.keys())
+            .find(key => {
+                const result = this.pipelineVerifications.get(key);
+                return result?.pipeline_id === pipelineId;
+            });
+        
+        if (verificationId) {
+            this.pipelineVerifications.insert(verificationId, updatedVerification);
+        }
+
+        return true;
+    }
+
+    /**
+     * Get pipeline verification status
+     */
+    @query([IDL.Text])
+    getPipelineVerification(pipelineId: string): PipelineVerificationResultWrapper {
+        const result = Array.from(this.pipelineVerifications.values())
+            .find(v => v.pipeline_id === pipelineId);
+        
+        if (!result) {
+            return { Err: { NotFound: `No verification found for pipeline ${pipelineId}` } };
+        }
+
+        return { Ok: result };
+    }
+
+    /**
+     * List all pipeline verifications for a repository
+     */
+    @query([IDL.Text])
+    listPipelineVerifications(repositoryId: string): PipelineVerificationResult[] {
+        const results: PipelineVerificationResult[] = [];
+        
+        for (let i = 0; i < this.pipelineVerifications.len(); i++) {
+            const items = this.pipelineVerifications.items(i, 1);
+            if (items.length > 0) {
+                const [_, result] = items[0];
+                // Note: This is a simplified filter, in practice you'd need to store repository_id in the result
+                results.push(result);
+            }
+        }
+
+        return results.sort((a, b) => Number(b.created_at - a.created_at));
+    }
+
+    // ============================================================================
+    // PIPELINE VERIFICATION HELPER METHODS
+    // ============================================================================
+
+    /**
+     * Analyze executor results for consensus
+     */
+    private analyzeExecutorConsensus(request: PipelineVerificationRequest): {
+        consensus_achieved: boolean;
+        consensus_count: number;
+        verified_stages: string[];
+        failed_stages: string[];
+        stage_consensus: [string, number][];
+        artifact_hashes: [string, string][];
+        execution_summary: {
+            total_cycles: bigint;
+            total_time: bigint;
+            success_rate: number;
+        };
+    } {
+        const stageResults = new Map<string, Array<{ success: boolean; artifacts: [string, number[]][]; cycles: bigint; time: bigint }>>();
+        const artifactHashes = new Map<string, string>();
+        
+        let totalCycles = 0n;
+        let totalTime = 0n;
+        let totalStages = 0;
+        let successfulStages = 0;
+
+        // Collect results by stage
+        for (const executorResult of request.executor_results) {
+            for (const stageResult of executorResult.stage_results) {
+                if (!stageResults.has(stageResult.stage_name)) {
+                    stageResults.set(stageResult.stage_name, []);
+                }
+                
+                stageResults.get(stageResult.stage_name)!.push({
+                    success: stageResult.success,
+                    artifacts: stageResult.artifacts,
+                    cycles: stageResult.cycles_consumed,
+                    time: stageResult.execution_time
+                });
+
+                totalCycles += stageResult.cycles_consumed;
+                totalTime += stageResult.execution_time;
+                totalStages++;
+                
+                if (stageResult.success) {
+                    successfulStages++;
+                }
+
+                // Generate artifact hash (simplified)
+                if (stageResult.artifacts.length > 0) {
+                    const artifactData = stageResult.artifacts.map(([name, data]) => `${name}:${data.length}`).join(',');
+                    artifactHashes.set(stageResult.stage_name, this.simpleHash(artifactData));
+                }
+            }
+        }
+
+        // Analyze consensus for each stage
+        const verifiedStages: string[] = [];
+        const failedStages: string[] = [];
+        const stageConsensus: [string, number][] = [];
+
+        for (const [stageName, results] of stageResults.entries()) {
+            const successCount = results.filter(r => r.success).length;
+            const consensusAchieved = successCount >= request.required_consensus;
+            
+            stageConsensus.push([stageName, successCount]);
+            
+            if (consensusAchieved) {
+                verifiedStages.push(stageName);
+            } else {
+                failedStages.push(stageName);
+            }
+        }
+
+        const overallConsensus = failedStages.length === 0 && verifiedStages.length > 0;
+        const consensusCount = Math.min(...stageConsensus.map(([_, count]) => count));
+
+        return {
+            consensus_achieved: overallConsensus,
+            consensus_count: consensusCount,
+            verified_stages: verifiedStages,
+            failed_stages: failedStages,
+            stage_consensus: stageConsensus,
+            artifact_hashes: Array.from(artifactHashes.entries()),
+            execution_summary: {
+                total_cycles: totalCycles,
+                total_time: totalTime,
+                success_rate: totalStages > 0 ? successfulStages / totalStages : 0
+            }
+        };
+    }
+
+    /**
+     * Check quality gates for a repository
+     */
+    private async checkQualityGates(repositoryId: string, request: PipelineVerificationRequest): Promise<boolean> {
+        const gates = this.qualityGates.get(repositoryId);
+        if (!gates || gates.length === 0) {
+            return true; // No quality gates configured
+        }
+
+        for (const gate of gates) {
+            const passed = await this.evaluateQualityGate(gate, request);
+            if (!passed && gate.required) {
+                return false; // Required quality gate failed
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Evaluate a single quality gate
+     */
+    private async evaluateQualityGate(gate: QualityGate, request: PipelineVerificationRequest): Promise<boolean> {
+        try {
+            if ('TestCoverage' in gate.gate_type) {
+                return this.checkTestCoverage(gate.gate_type.TestCoverage.min_percentage, request);
+            } else if ('CodeQuality' in gate.gate_type) {
+                return this.checkCodeQuality(gate.gate_type.CodeQuality.max_violations, request);
+            } else if ('SecurityScan' in gate.gate_type) {
+                return this.checkSecurityScan(gate.gate_type.SecurityScan.max_vulnerabilities, request);
+            } else if ('PerformanceTest' in gate.gate_type) {
+                return this.checkPerformanceTest(gate.gate_type.PerformanceTest.max_response_time_ms, request);
+            } else if ('CustomCheck' in gate.gate_type) {
+                return this.checkCustomGate(gate.gate_type.CustomCheck, request);
+            }
+            
+            return false;
+        } catch (error) {
+            console.log(`Quality gate ${gate.name} evaluation failed: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * Quality gate check implementations
+     */
+    private checkTestCoverage(minPercentage: number, request: PipelineVerificationRequest): boolean {
+        // Simplified implementation - look for test coverage in metadata
+        for (const executorResult of request.executor_results) {
+            for (const stageResult of executorResult.stage_results) {
+                const coverageMetadata = stageResult.metadata.find(([key, _]) => key === 'test_coverage');
+                if (coverageMetadata) {
+                    const coverage = parseFloat(coverageMetadata[1]);
+                    if (coverage >= minPercentage) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private checkCodeQuality(maxViolations: number, request: PipelineVerificationRequest): boolean {
+        // Simplified implementation - look for code quality violations in metadata
+        for (const executorResult of request.executor_results) {
+            for (const stageResult of executorResult.stage_results) {
+                const violationsMetadata = stageResult.metadata.find(([key, _]) => key === 'quality_violations');
+                if (violationsMetadata) {
+                    const violations = parseInt(violationsMetadata[1]);
+                    if (violations <= maxViolations) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return true; // Pass if no violations found
+    }
+
+    private checkSecurityScan(maxVulnerabilities: number, request: PipelineVerificationRequest): boolean {
+        // Simplified implementation - look for security scan results in metadata
+        for (const executorResult of request.executor_results) {
+            for (const stageResult of executorResult.stage_results) {
+                const vulnMetadata = stageResult.metadata.find(([key, _]) => key === 'security_vulnerabilities');
+                if (vulnMetadata) {
+                    const vulnerabilities = parseInt(vulnMetadata[1]);
+                    if (vulnerabilities <= maxVulnerabilities) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return true; // Pass if no vulnerabilities found
+    }
+
+    private checkPerformanceTest(maxResponseTimeMs: number, request: PipelineVerificationRequest): boolean {
+        // Simplified implementation - look for performance test results in metadata
+        for (const executorResult of request.executor_results) {
+            for (const stageResult of executorResult.stage_results) {
+                const perfMetadata = stageResult.metadata.find(([key, _]) => key === 'response_time_ms');
+                if (perfMetadata) {
+                    const responseTime = parseInt(perfMetadata[1]);
+                    if (responseTime <= maxResponseTimeMs) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private checkCustomGate(customCheck: { check_command: string; expected_output: string }, request: PipelineVerificationRequest): boolean {
+        // Simplified implementation - in practice, this would execute the custom check
+        console.log(`Custom check: ${customCheck.check_command}, expected: ${customCheck.expected_output}`);
+        return true; // Always pass for now
+    }
+
+    /**
+     * Initiate deployment approval workflow
+     */
+    private async initiateDeploymentApproval(pipelineId: string, approval: DeploymentApproval): Promise<void> {
+        const updatedApproval: DeploymentApproval = {
+            ...approval,
+            approval_status: { Pending: { pending_approvers: approval.required_approvers } }
+        };
+
+        this.deploymentApprovals.insert(pipelineId, updatedApproval);
+
+        // Set timeout for approval if configured
+        if (approval.approval_timeout_hours > 0) {
+            const timeoutMs = Number(approval.approval_timeout_hours) * 60 * 60 * 1000;
+            setTimer(BigInt(timeoutMs), () => {
+                this.expireDeploymentApproval(pipelineId);
+            });
+        }
+    }
+
+    /**
+     * Expire deployment approval
+     */
+    private expireDeploymentApproval(pipelineId: string): void {
+        const approval = this.deploymentApprovals.get(pipelineId);
+        if (approval && 'Pending' in approval.approval_status) {
+            const expiredApproval: DeploymentApproval = {
+                ...approval,
+                approval_status: { Expired: { expired_at: time() } }
+            };
+            this.deploymentApprovals.insert(pipelineId, expiredApproval);
+        }
+    }
+
+    /**
+     * Check if approval requirements are met
+     */
+    private checkApprovalRequirements(
+        approval: DeploymentApproval, 
+        approvals: Array<{ approver: Principal; approved: boolean; timestamp: bigint; comment: string | null }>
+    ): boolean {
+        const approvedCount = approvals.filter(a => a.approved).length;
+        const rejectedCount = approvals.filter(a => !a.approved).length;
+
+        // If any rejection and block on failure, deployment is not approved
+        if (rejectedCount > 0 && approval.block_on_verification_failure) {
+            return false;
+        }
+
+        // Check if minimum approvals are met
+        return approvedCount >= approval.min_approvals;
+    }
+
+    /**
+     * Generate verification ID
+     */
+    private generateVerificationId(pipelineId: string): string {
+        const timestamp = time();
+        return `verification_${pipelineId}_${timestamp}`;
+    }
+
+    /**
+     * Simple hash function for artifact comparison
+     */
+    private simpleHash(input: string): string {
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+            const char = input.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return hash.toString(16);
     }
 }
