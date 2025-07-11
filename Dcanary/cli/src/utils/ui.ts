@@ -211,16 +211,25 @@ export function printError(message: string, details?: string): void {
     }
 }
 
-export function printSuccess(message: string): void {
+export function printSuccess(message: string, details?: string): void {
     console.log(Colors.success(`✓ ${message}`));
+    if (details) {
+        console.log(Colors.gray(`  ${details}`));
+    }
 }
 
-export function printWarning(message: string): void {
+export function printWarning(message: string, details?: string): void {
     console.log(Colors.warning(`⚠ ${message}`));
+    if (details) {
+        console.log(Colors.gray(`  ${details}`));
+    }
 }
 
-export function printInfo(message: string): void {
+export function printInfo(message: string, details?: string): void {
     console.log(Colors.info(`ℹ ${message}`));
+    if (details) {
+        console.log(Colors.gray(`  ${details}`));
+    }
 }
 
 export function clearLine(): void {

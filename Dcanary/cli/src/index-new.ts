@@ -17,7 +17,6 @@ import { createStatusCommand } from './commands/status';
 import { createLogsCommand } from './commands/logs';
 import { createConfigureCommand } from './commands/configure';
 import { createVersionCommand } from './commands/version';
-import { createSCMCommand } from './commands/scm';
 
 function main() {
     const program = new Command();
@@ -26,7 +25,7 @@ function main() {
     program
         .name('dcanary')
         .description('Dcanary - Decentralized CI/CD Pipeline for Internet Computer')
-        .version('1.0.0')
+        .version('2.0.0')
         .option('-v, --verbose', 'Enable verbose logging')
         .option('-q, --quiet', 'Suppress non-error output')
         .option('--log-level <level>', 'Set log level (error, warn, info, debug)', 'info')
@@ -70,7 +69,6 @@ function main() {
     program.addCommand(createLogsCommand());
     program.addCommand(createConfigureCommand());
     program.addCommand(createVersionCommand());
-    program.addCommand(createSCMCommand());
 
     // Help customization
     program.configureHelp({
