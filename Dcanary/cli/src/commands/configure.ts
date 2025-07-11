@@ -19,6 +19,12 @@ export function createConfigureCommand(): Command {
         .description('Configure CLI settings')
         .option('--set-build-canister-id <canister_id>', 'Set build instructions canister ID')
         .option('--set-verification-canister-id <canister_id>', 'Set verification canister ID')
+        .option('--webhook-canister <canister_id>', 'Set webhook canister ID')
+        .option('--verification-canister <canister_id>', 'Set verification canister ID')
+        .option('--build-executor-canister <canister_id>', 'Set build executor canister ID')
+        .option('--identity <path>', 'Set IC identity file path')
+        .option('--wallet <id>', 'Set default wallet canister ID')
+        .option('--provider <url>', 'Set IC provider URL')
         .option('--set-executor-ids <canister_ids>', 'Set build executor canister IDs (comma-separated)')
         .option('--set-network <network>', 'Set default network (ic or local)')
         .option('--set-identity <identity>', 'Set default identity')
@@ -28,6 +34,12 @@ export function createConfigureCommand(): Command {
         .action(async (options: CLIOptions & {
             setBuildCanisterId?: string;
             setVerificationCanisterId?: string;
+            webhookCanister?: string;
+            verificationCanister?: string;
+            buildExecutorCanister?: string;
+            identity?: string;
+            wallet?: string;
+            provider?: string;
             setExecutorIds?: string;
             setNetwork?: string;
             setIdentity?: string;
@@ -67,6 +79,34 @@ export function createConfigureCommand(): Command {
                 if (options.setVerificationCanisterId) {
                     validateCanisterId(options.setVerificationCanisterId);
                     updates.verificationCanisterId = options.setVerificationCanisterId;
+                }
+
+                if (options.webhookCanister) {
+                    validateCanisterId(options.webhookCanister);
+                    updates.webhookCanisterId = options.webhookCanister;
+                }
+
+                if (options.verificationCanister) {
+                    validateCanisterId(options.verificationCanister);
+                    updates.verificationCanisterId = options.verificationCanister;
+                }
+
+                if (options.buildExecutorCanister) {
+                    validateCanisterId(options.buildExecutorCanister);
+                    updates.buildExecutorCanisterId = options.buildExecutorCanister;
+                }
+
+                if (options.identity) {
+                    updates.identity = options.identity;
+                }
+
+                if (options.wallet) {
+                    validateCanisterId(options.wallet);
+                    updates.walletCanisterId = options.wallet;
+                }
+
+                if (options.provider) {
+                    updates.icProviderUrl = options.provider;
                 }
 
                 if (options.setExecutorIds) {

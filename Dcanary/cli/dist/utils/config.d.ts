@@ -27,10 +27,13 @@ export declare class ConfigManager {
      * Get a specific configuration value
      */
     get<K extends keyof CLIConfig>(key: K): CLIConfig[K];
+    get<T>(key: string): T | undefined;
+    get<T>(key: string, defaultValue: T): T;
     /**
      * Set a configuration value
      */
     set<K extends keyof CLIConfig>(key: K, value: CLIConfig[K]): void;
+    set<T>(key: string, value: T): void;
     /**
      * Set multiple configuration values
      */
@@ -70,6 +73,10 @@ export declare class ConfigManager {
      * Reset configuration to defaults
      */
     reset(): void;
+    /**
+     * Load configuration from a specific file path
+     */
+    loadFromFile(filePath: string): void;
 }
 export declare const configManager: ConfigManager;
 //# sourceMappingURL=config.d.ts.map

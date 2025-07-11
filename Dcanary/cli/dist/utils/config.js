@@ -118,15 +118,12 @@ class ConfigManager {
     getConfig() {
         return { ...this.config };
     }
-    /**
-     * Get a specific configuration value
-     */
-    get(key) {
-        return this.config[key];
+    get(key, defaultValue) {
+        if (key in this.config) {
+            return this.config[key];
+        }
+        return defaultValue;
     }
-    /**
-     * Set a configuration value
-     */
     set(key, value) {
         this.config[key] = value;
     }
@@ -194,6 +191,24 @@ class ConfigManager {
      */
     reset() {
         this.config = {};
+    }
+    /**
+     * Load configuration from a specific file path
+     */
+    loadFromFile(filePath) {
+        try {
+            if (fs.existsSync(filePath)) {
+                const fileContent = fs.readFileSync(filePath, 'utf8');
+                const fileConfig = JSON.parse(fileContent);
+                this.config = { ...this.config, ...fileConfig };
+            }
+            else {
+                throw new Error(`Configuration file not found: ${filePath}`);
+            }
+        }
+        catch (error) {
+            throw new types_1.ConfigurationError(`Failed to load config from ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 }
 exports.ConfigManager = ConfigManager;

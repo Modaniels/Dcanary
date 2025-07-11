@@ -100,15 +100,23 @@ export class ConfigManager {
     /**
      * Get a specific configuration value
      */
-    get<K extends keyof CLIConfig>(key: K): CLIConfig[K] {
-        return this.config[key];
+    get<K extends keyof CLIConfig>(key: K): CLIConfig[K];
+    get<T>(key: string): T | undefined;
+    get<T>(key: string, defaultValue: T): T;
+    get<T>(key: string, defaultValue?: T): T | CLIConfig[keyof CLIConfig] | undefined {
+        if (key in this.config) {
+            return this.config[key as keyof CLIConfig] as T;
+        }
+        return defaultValue;
     }
 
     /**
      * Set a configuration value
      */
-    set<K extends keyof CLIConfig>(key: K, value: CLIConfig[K]): void {
-        this.config[key] = value;
+    set<K extends keyof CLIConfig>(key: K, value: CLIConfig[K]): void;
+    set<T>(key: string, value: T): void;
+    set<T>(key: string, value: T): void {
+        (this.config as any)[key] = value;
     }
 
     /**
@@ -195,6 +203,23 @@ export class ConfigManager {
      */
     reset(): void {
         this.config = {};
+    }
+
+    /**
+     * Load configuration from a specific file path
+     */
+    loadFromFile(filePath: string): void {
+        try {
+            if (fs.existsSync(filePath)) {
+                const fileContent = fs.readFileSync(filePath, 'utf8');
+                const fileConfig = JSON.parse(fileContent);
+                this.config = { ...this.config, ...fileConfig };
+            } else {
+                throw new Error(`Configuration file not found: ${filePath}`);
+            }
+        } catch (error) {
+            throw new ConfigurationError(`Failed to load config from ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 }
 

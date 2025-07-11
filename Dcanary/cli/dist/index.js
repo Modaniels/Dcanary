@@ -1,27 +1,36 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = main;
 const commander_1 = require("commander");
-const add_instructions_1 = require("./commands/add-instructions");
-const request_verification_1 = require("./commands/request-verification");
-const get_status_1 = require("./commands/get-status");
-const configure_1 = require("./commands/configure");
-const version_1 = require("./commands/version");
-const scm_integration_1 = require("./commands/scm-integration");
-const webhook_1 = require("./commands/webhook");
 const ui_1 = require("./utils/ui");
 const logger_1 = require("./utils/logger");
 const config_1 = require("./utils/config");
+// Import new command modules
+const init_1 = require("./commands/init");
+const analyze_1 = require("./commands/analyze");
+const build_1 = require("./commands/build");
+const deploy_1 = require("./commands/deploy");
+const network_1 = require("./commands/network");
+const integrate_1 = require("./commands/integrate");
+const secrets_1 = require("./commands/secrets");
+const status_1 = require("./commands/status");
+const logs_1 = require("./commands/logs");
+const configure_1 = require("./commands/configure");
+const version_1 = require("./commands/version");
+const scm_1 = require("./commands/scm");
 function main() {
     const program = new commander_1.Command();
     // CLI configuration
     program
-        .name('mody')
-        .description('Mody - Decentralized CI/CD Pipeline CLI for ICP')
+        .name('dcanary')
+        .description('Dcanary - Decentralized CI/CD Pipeline for Internet Computer')
         .version('1.0.0')
         .option('-v, --verbose', 'Enable verbose logging')
         .option('-q, --quiet', 'Suppress non-error output')
-        .option('--log-level <level>', 'Set log level (error, warn, info, debug)', 'info');
+        .option('--log-level <level>', 'Set log level (error, warn, info, debug)', 'info')
+        .option('--config <path>', 'Path to config file')
+        .option('--network <network>', 'IC Network to use (ic, local)', 'local');
     // Global options handler
     program.hook('preAction', (thisCommand) => {
         const options = thisCommand.opts();
@@ -35,19 +44,30 @@ function main() {
         else if (options.logLevel) {
             (0, logger_1.setLogLevel)(options.logLevel);
         }
-        // Update config with log level
+        // Update config
         if (options.logLevel) {
             config_1.configManager.set('logLevel', options.logLevel);
         }
+        if (options.network) {
+            config_1.configManager.set('network', options.network);
+        }
+        if (options.config) {
+            config_1.configManager.loadFromFile(options.config);
+        }
     });
-    // Add commands
-    program.addCommand((0, add_instructions_1.createAddInstructionsCommand)());
-    program.addCommand((0, request_verification_1.createRequestVerificationCommand)());
-    program.addCommand((0, get_status_1.createGetStatusCommand)());
+    // Core Commands (New Architecture)
+    program.addCommand((0, init_1.createInitCommand)());
+    program.addCommand((0, analyze_1.createAnalyzeCommand)());
+    program.addCommand((0, build_1.createBuildCommand)());
+    program.addCommand((0, deploy_1.createDeployCommand)());
+    program.addCommand((0, network_1.createNetworkCommand)());
+    program.addCommand((0, integrate_1.createIntegrateCommand)());
+    program.addCommand((0, secrets_1.createSecretsCommand)());
+    program.addCommand((0, status_1.createStatusCommand)());
+    program.addCommand((0, logs_1.createLogsCommand)());
     program.addCommand((0, configure_1.createConfigureCommand)());
     program.addCommand((0, version_1.createVersionCommand)());
-    program.addCommand((0, scm_integration_1.createSCMIntegrationCommand)());
-    program.addCommand((0, webhook_1.createWebhookCommand)());
+    program.addCommand((0, scm_1.createSCMCommand)());
     // Help customization
     program.configureHelp({
         sortSubcommands: true,
@@ -55,34 +75,41 @@ function main() {
         optionTerm: (option) => ui_1.Colors.yellow(option.flags),
         argumentTerm: (argument) => ui_1.Colors.magenta(`<${argument.name()}>`),
     });
-    // Custom help for main command
+    // Custom help
     program.on('--help', () => {
         console.log();
-        console.log(ui_1.Colors.bold('Examples:'));
-        console.log('  ' + ui_1.Colors.gray('# Add build instructions from file'));
-        console.log('  ' + ui_1.Colors.cyan('mody add-instructions') + ' -p my-project -v 1.0.0 -f build.sh');
+        console.log(ui_1.Colors.bold('🚀 Quick Start:'));
         console.log();
-        console.log('  ' + ui_1.Colors.gray('# Request verification and wait for completion'));
-        console.log('  ' + ui_1.Colors.cyan('mody request-verification') + ' -p my-project -v 1.0.0');
+        console.log('  ' + ui_1.Colors.gray('# Initialize ICP project pipeline'));
+        console.log('  ' + ui_1.Colors.cyan('dcanary init'));
         console.log();
-        console.log('  ' + ui_1.Colors.gray('# Check verification status'));
-        console.log('  ' + ui_1.Colors.cyan('mody get-status') + ' -p my-project -v 1.0.0');
+        console.log('  ' + ui_1.Colors.gray('# Analyze ICP project structure'));
+        console.log('  ' + ui_1.Colors.cyan('dcanary analyze'));
         console.log();
-        console.log('  ' + ui_1.Colors.gray('# Configure CLI settings'));
-        console.log('  ' + ui_1.Colors.cyan('mody configure') + ' --set-build-canister-id abc123');
+        console.log('  ' + ui_1.Colors.gray('# Set up Git integration for ICP'));
+        console.log('  ' + ui_1.Colors.cyan('dcanary integrate github --auto-deploy'));
         console.log();
-        console.log(ui_1.Colors.bold('Environment Variables:'));
-        console.log('  ' + ui_1.Colors.yellow('MODY_BUILD_INSTRUCTIONS_CANISTER_ID') + '  Build instructions canister ID');
-        console.log('  ' + ui_1.Colors.yellow('MODY_VERIFICATION_CANISTER_ID') + '       Verification canister ID');
-        console.log('  ' + ui_1.Colors.yellow('MODY_BUILD_EXECUTOR_CANISTER_IDS') + '    Comma-separated executor IDs');
-        console.log('  ' + ui_1.Colors.yellow('MODY_NETWORK') + '                        Network (ic or local)');
-        console.log('  ' + ui_1.Colors.yellow('MODY_IDENTITY') + '                       Identity to use');
-        console.log('  ' + ui_1.Colors.yellow('MODY_TIMEOUT') + '                        Default timeout in seconds');
-        console.log('  ' + ui_1.Colors.yellow('MODY_LOG_LEVEL') + '                      Log level (error, warn, info, debug)');
+        console.log('  ' + ui_1.Colors.gray('# Deploy canisters to IC'));
+        console.log('  ' + ui_1.Colors.cyan('dcanary deploy --network ic'));
         console.log();
-        console.log(ui_1.Colors.bold('For more information:'));
-        console.log('  ' + ui_1.Colors.gray('Visit: https://github.com/your-org/mody-cli'));
-        console.log('  ' + ui_1.Colors.gray('Docs:  https://docs.your-org.com/mody-cli'));
+        console.log(ui_1.Colors.bold('� ICP Project Types Supported:'));
+        console.log('  ' + ui_1.Colors.green('• Motoko canisters'));
+        console.log('  ' + ui_1.Colors.green('• Rust canisters'));
+        console.log('  ' + ui_1.Colors.green('• Azle (TypeScript) canisters'));
+        console.log('  ' + ui_1.Colors.green('• Frontend DApps (React/Vue with IC integration)'));
+        console.log('  ' + ui_1.Colors.green('• Full-stack ICP applications'));
+        console.log();
+        console.log(ui_1.Colors.bold('🔗 ICP Deployment Features:'));
+        console.log('  ' + ui_1.Colors.blue('• Mainnet & local replica deployment'));
+        console.log('  ' + ui_1.Colors.blue('• Canister upgrade management'));
+        console.log('  ' + ui_1.Colors.blue('• Cycles management & monitoring'));
+        console.log('  ' + ui_1.Colors.blue('• Asset canister deployment'));
+        console.log('  ' + ui_1.Colors.blue('• Multi-canister coordination'));
+        console.log();
+        console.log(ui_1.Colors.bold('📖 Learn More:'));
+        console.log('  ' + ui_1.Colors.gray('Website: https://dcanary.io'));
+        console.log('  ' + ui_1.Colors.gray('Docs:    https://docs.dcanary.io'));
+        console.log('  ' + ui_1.Colors.gray('GitHub:  https://github.com/dcanary-org/dcanary'));
         console.log();
     });
     // Error handling
@@ -93,13 +120,14 @@ function main() {
         if (err.code === 'commander.unknownCommand') {
             (0, ui_1.printError)('Unknown Command', `Unknown command: ${err.message}`);
             console.log();
-            console.log(ui_1.Colors.gray('Run ' + ui_1.Colors.cyan('mody --help') + ' to see available commands'));
+            console.log(ui_1.Colors.gray('Run ' + ui_1.Colors.cyan('dcanary --help') + ' to see available commands'));
+            console.log(ui_1.Colors.gray('Or try ' + ui_1.Colors.cyan('dcanary init') + ' to get started'));
             process.exit(1);
         }
         if (err.code === 'commander.missingArgument' || err.code === 'commander.missingMandatoryOptionValue') {
             (0, ui_1.printError)('Missing Argument', err.message);
             console.log();
-            console.log(ui_1.Colors.gray('Run ' + ui_1.Colors.cyan('mody <command> --help') + ' for command-specific help'));
+            console.log(ui_1.Colors.gray('Run ' + ui_1.Colors.cyan('dcanary <command> --help') + ' for command-specific help'));
             process.exit(1);
         }
         logger_1.logger.error('CLI error', { error: err.message, code: err.code });
@@ -124,8 +152,9 @@ function main() {
     });
     // Show header for interactive usage (not in CI)
     if (process.argv.length === 2 && !process.env.CI) {
-        (0, ui_1.printHeader)('Mody - Decentralized CI/CD Pipeline CLI');
-        console.log(ui_1.Colors.gray('Run ' + ui_1.Colors.cyan('mody --help') + ' to see available commands'));
+        (0, ui_1.printHeader)('Dcanary - Decentralized CI/CD for Internet Computer');
+        console.log(ui_1.Colors.gray('🌐 Run ' + ui_1.Colors.cyan('dcanary init') + ' to set up ICP project pipeline'));
+        console.log(ui_1.Colors.gray('📖 Run ' + ui_1.Colors.cyan('dcanary --help') + ' to see all commands'));
         console.log();
         process.exit(0);
     }

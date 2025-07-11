@@ -3,10 +3,14 @@ export interface CLIConfig {
     buildInstructionsCanisterId?: string;
     verificationCanisterId?: string;
     buildExecutorCanisterIds?: string[];
+    webhookCanisterId?: string;
     network?: 'ic' | 'local';
     identity?: string;
     timeout?: number;
     logLevel?: 'error' | 'warn' | 'info' | 'debug';
+    scm?: any;
+    environmentVariables?: Record<string, string>;
+    [key: string]: any;
 }
 export interface CLIOptions {
     projectId?: string;

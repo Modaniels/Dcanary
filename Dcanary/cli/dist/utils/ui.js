@@ -187,14 +187,23 @@ function printError(message, details) {
         console.log(Colors.gray(`  ${details}`));
     }
 }
-function printSuccess(message) {
+function printSuccess(message, details) {
     console.log(Colors.success(`✓ ${message}`));
+    if (details) {
+        console.log(Colors.gray(`  ${details}`));
+    }
 }
-function printWarning(message) {
+function printWarning(message, details) {
     console.log(Colors.warning(`⚠ ${message}`));
+    if (details) {
+        console.log(Colors.gray(`  ${details}`));
+    }
 }
-function printInfo(message) {
+function printInfo(message, details) {
     console.log(Colors.info(`ℹ ${message}`));
+    if (details) {
+        console.log(Colors.gray(`  ${details}`));
+    }
 }
 function clearLine() {
     process.stdout.write('\r\x1B[K');

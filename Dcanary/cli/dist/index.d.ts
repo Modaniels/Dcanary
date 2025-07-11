@@ -1,3 +1,4 @@
 #!/usr/bin/env node
-export {};
+declare function main(): void;
+export { main };
 //# sourceMappingURL=index.d.ts.map
