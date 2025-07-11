@@ -111,9 +111,17 @@ Every build step is recorded on-chain. Audit any pipeline execution, anytime, fo
 
 Ready to dive deeper? Check out our guides:
 
-- **[📖 Complete Workflow Guide](./COMPLETE_WORKFLOW_GUIDE.md)** - Build a real npm project with DCanary
-- **[⚡ Quick Start Guide](./QUICK_START.md)** - Get started in 5 minutes  
-- **[🚀 Implementation Status](./IMPLEMENTATION_STATUS.md)** - See what's ready to use
+### 🏃‍♂️ Getting Started
+
+- **[⚡ Quick Start Guide](./Dcanary/QUICK_START.md)** - Get started in 5 minutes  
+- **[📖 Complete Workflow Guide](./Dcanary/COMPLETE_WORKFLOW_GUIDE.md)** - Build a real npm project with DCanary
+- **[🛠️ CLI Documentation](./Dcanary/cli/README.md)** - Command-line tool reference
+
+### 🔍 Reference & Status
+
+- **[🚀 Implementation Status](./Dcanary/IMPLEMENTATION_STATUS.md)** - See what's ready to use
+- **[🧪 Testing Guide](./Dcanary/TESTING_PLAN.md)** - Test and verify DCanary works
+- **[⚙️ Canister Integration Guide](./Dcanary/EXISTING_CANISTERS_INTEGRATION.md)** - Technical integration details
 
 ## 🧪 Test It Out
 
@@ -137,8 +145,8 @@ Want to contribute or run DCanary locally?
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/dcanary
-cd dcanary
+git clone https://github.com/modaniels/Dcanary
+cd Dcanary/Dcanary
 
 # Deploy canisters locally
 dfx start --background
