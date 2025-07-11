@@ -14,9 +14,9 @@ This is the official documentation website for **Dcanary** - a decentralized CI/
 
 ### 📚 Comprehensive Documentation
 - **Complete Installation Guide**: Step-by-step setup instructions
-- **CLI Reference**: Detailed documentation for all Mody CLI commands
+- **CLI Reference**: Detailed documentation for all DCanary CLI commands
 - **Real-World Examples**: Practical use cases and workflows
-- **About Section**: Understanding the philosophy behind Dcanary
+- **About Section**: Understanding the philosophy behind DCanary
 
 ### 🚀 User Experience
 - **Smooth Navigation**: Sticky navigation with active section highlighting
