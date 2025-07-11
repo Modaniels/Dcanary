@@ -462,7 +462,33 @@ dfx canister id deployment_canister
 
 ### 6.2 Use DCanary CLI
 
-The DCanary CLI provides a simple interface to configure and manage pipelines. Once the canisters are deployed, you can use the CLI to set up your project pipeline configuration.
+```bash
+# Install the DCanary CLI globally
+npm install -g @dcanary/cli
+
+# Initialize your project for DCanary
+dcanary init --type nodejs
+
+# Create a pipeline for your project
+dcanary pipeline create \
+  --name "Node.js TypeScript CI" \
+  --repo "github:testorg/test-npm-project"
+
+# Add build stages
+dcanary pipeline add-stage install \
+  --commands "npm ci" \
+  --timeout 5m
+
+dcanary pipeline add-stage test \
+  --commands "npm run test:coverage" \
+  --depends-on install \
+  --timeout 10m
+
+dcanary pipeline add-stage build \
+  --commands "npm run build" \
+  --depends-on test \
+  --timeout 5m
+```
 
 ## Step 7: Execute Complete Workflow
 
@@ -476,24 +502,22 @@ npm install
 npm run ci
 ```
 
-### 7.2 Connect to DCanary
+### 7.2 Trigger Your Pipeline
 
 ```bash
-# Check pipeline status using dfx
-dfx canister call webhook_canister getBuildQueueStatus
+# Trigger a manual build
+dcanary build trigger \
+  --repo "github:testorg/test-npm-project" \
+  --branch main
 
-# Check pipeline configuration
-dfx canister call pipeline_config_canister getPipelineConfigByRepository '("github:testorg/test-npm-project")'
+# Monitor pipeline status
+dcanary status
 
-# Trigger manual pipeline execution
-dfx canister call webhook_canister triggerPipelineExecution '(
-  "github:testorg/test-npm-project",
-  "manual",
-  "main", 
-  "manual-trigger-123",
-  "Manual pipeline test",
-  "https://github.com/testorg/test-npm-project/archive/main.tar.gz"
-)'
+# View build logs
+dcanary logs --follow
+
+# Check specific pipeline
+dcanary pipeline get "github:testorg/test-npm-project"
 ```
 
 ## Step 8: Verify Results
@@ -501,21 +525,27 @@ dfx canister call webhook_canister triggerPipelineExecution '(
 ### 8.1 Check Build Results
 
 ```bash
-# Check build executor results
-dfx canister call build_executor getPipelineResult '("pipeline_github_testorg_test-npm-project_123")'
+# Check pipeline status
+dcanary status
 
-# Check verification results
-dfx canister call verification_canister getVerificationResult '("test-npm-project", "1.0.0")'
+# View detailed logs
+dcanary logs --pipeline-id "my-pipeline-123"
+
+# Get build artifacts
+dcanary artifacts download --build-id "build-456"
 ```
 
 ### 8.2 Check Deployment Status
 
 ```bash
-# Check deployed canisters
-dfx canister call deployment_canister listDeployments
+# List all deployments
+dcanary deployments list
 
-# Get specific canister info
-dfx canister call deployment_canister getCanisterInfo '("deployed-canister-id")'
+# Get specific deployment info
+dcanary deployment status --id "deploy-789"
+
+# View canister info (if deployed to IC)
+dcanary canister info --id "deployed-canister-id"
 ```
 
 ## Step 9: Real Integration with DCanary CLI
@@ -523,14 +553,8 @@ dfx canister call deployment_canister getCanisterInfo '("deployed-canister-id")'
 ### 9.1 Install DCanary CLI
 
 ```bash
-# Navigate to the CLI directory
-cd ../cli
-
-# Install the CLI globally
-npm install -g .
-
-# Or link it for development
-npm link
+# Install globally
+npm install -g @dcanary/cli
 
 # Verify installation
 dcanary --version
@@ -539,57 +563,29 @@ dcanary --version
 ### 9.2 Initialize Project with DCanary
 
 ```bash
-# Go back to your test project
-cd ../test-npm-project
-
 # Initialize DCanary configuration
 dcanary init --type nodejs --name "Test NPM Project"
 
-# Configure pipeline using CLI
+# Configure pipeline using CLI templates
 dcanary pipeline create \
   --name "Node.js TypeScript CI" \
   --repo "github:testorg/test-npm-project" \
   --template nodejs-typescript
-
-# Add stages
-dcanary pipeline add-stage install \
-  --runtime node \
-  --commands "npm ci" \
-  --timeout 5m \
-  --memory 2GB
-
-dcanary pipeline add-stage test \
-  --runtime node \
-  --commands "npm run test:coverage" \
-  --depends-on install \
-  --timeout 10m \
-  --memory 4GB
-
-dcanary pipeline add-stage build \
-  --runtime node \
-  --commands "npm run build" \
-  --depends-on test \
-  --timeout 5m \
-  --memory 2GB
-
-# Deploy the pipeline configuration
-dcanary deploy-pipeline
 ```
 
-### 9.3 Trigger Pipeline via CLI
+### 9.3 Monitor and Manage Pipelines
 
 ```bash
 # Trigger a manual build
 dcanary build trigger \
   --repo "github:testorg/test-npm-project" \
-  --branch main \
-  --commit abc123def456
+  --branch main
 
 # Monitor pipeline status
-dcanary build status pipeline_test_123
+dcanary build status --pipeline-id "pipeline_test_123"
 
 # Get build logs
-dcanary build logs pipeline_test_123
+dcanary build logs --pipeline-id "pipeline_test_123"
 
 # List all pipelines
 dcanary pipeline list
@@ -664,3 +660,17 @@ echo "🎉 Demo completed! Your npm project is ready for DCanary CI/CD!"
 ```
 
 This complete workflow demonstrates how DCanary provides a fully decentralized, verifiable, and automated CI/CD pipeline that runs entirely on the Internet Computer blockchain! 🎉
+
+## 📚 Next Steps
+
+Now that you've completed the full workflow, explore more DCanary features:
+
+- **[Quick Start Guide](./QUICK_START.md)** - Get started in 5 minutes with any project
+- **[Implementation Status](./IMPLEMENTATION_STATUS.md)** - See all available features
+- **[Testing Guide](./TESTING_PLAN.md)** - Learn how to test your pipelines
+- **[CLI Documentation](./cli/README.md)** - Complete command reference
+- **[Main Documentation](../README.md)** - Overview and architecture
+
+---
+
+**🚀 Welcome to the decentralized future of CI/CD!** 🐤⛓️
