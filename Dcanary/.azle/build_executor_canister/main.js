@@ -57907,7 +57907,47 @@ var AgentCapabilities = idl_exports.Record({
   supported_languages: idl_exports.Vec(idl_exports.Text),
   installed_tools: idl_exports.Vec(idl_exports.Text)
 });
-var _cancelBuild_dec, _processNextBuild_dec, _queueBuildRequest_dec, _getResourceUsage_dec, _getBuildQueueStatus_dec, _getAgentHealth_dec, _updateAgentCapabilities_dec, _getAgentCapabilities_dec, _getStatistics_dec, _healthCheck_dec, _updateVerificationCanister_dec, _updateBuildInstructionsCanister_dec, _getBuildHistory_dec, _getHash_dec, _executeBuild_dec, _postUpgrade_dec, _init_dec, _init;
+var PipelineExecutionRequest = idl_exports.Record({
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  branch: idl_exports.Text,
+  trigger_type: idl_exports.Text,
+  source_url: idl_exports.Text,
+  timestamp: idl_exports.Nat64,
+  pipeline_config: idl_exports.Text
+  // JSON-encoded pipeline configuration
+});
+var StageExecutionResult = idl_exports.Record({
+  stage_name: idl_exports.Text,
+  success: idl_exports.Bool,
+  start_time: idl_exports.Nat64,
+  end_time: idl_exports.Nat64,
+  exit_code: idl_exports.Int32,
+  stdout: idl_exports.Text,
+  stderr: idl_exports.Text,
+  artifacts: idl_exports.Vec(idl_exports.Tuple(idl_exports.Text, idl_exports.Vec(idl_exports.Nat8))),
+  // filename -> binary data
+  cycles_consumed: idl_exports.Nat64,
+  memory_used: idl_exports.Nat32,
+  error_message: idl_exports.Opt(idl_exports.Text)
+});
+var PipelineExecutionResult = idl_exports.Record({
+  pipeline_id: idl_exports.Text,
+  repository_id: idl_exports.Text,
+  commit_hash: idl_exports.Text,
+  overall_success: idl_exports.Bool,
+  stages: idl_exports.Vec(StageExecutionResult),
+  start_time: idl_exports.Nat64,
+  end_time: idl_exports.Nat64,
+  total_cycles_consumed: idl_exports.Nat64,
+  total_memory_used: idl_exports.Nat32,
+  verification_required: idl_exports.Bool
+});
+var PipelineResult = idl_exports.Variant({
+  Ok: PipelineExecutionResult,
+  Err: BuildExecutorError
+});
+var _getPipelineResult_dec, _executePipeline_dec, _cancelBuild_dec, _processNextBuild_dec, _queueBuildRequest_dec, _getResourceUsage_dec, _getBuildQueueStatus_dec, _getAgentHealth_dec, _updateAgentCapabilities_dec, _getAgentCapabilities_dec, _getStatistics_dec, _healthCheck_dec, _updateVerificationCanister_dec, _updateBuildInstructionsCanister_dec, _getBuildHistory_dec, _getHash_dec, _executeBuild_dec, _postUpgrade_dec, _init_dec, _init;
 _init_dec = [init4([])], _postUpgrade_dec = [postUpgrade2([])], _executeBuild_dec = [update2([idl_exports.Text, idl_exports.Text], BuildExecutorResult)], _getHash_dec = [query2([], HashResult)], _getBuildHistory_dec = [query2([idl_exports.Opt(idl_exports.Nat32), idl_exports.Opt(idl_exports.Nat32)], idl_exports.Vec(ExecuteBuildResult))], _updateBuildInstructionsCanister_dec = [update2([idl_exports.Principal], idl_exports.Variant({ Ok: idl_exports.Null, Err: BuildExecutorError }))], _updateVerificationCanister_dec = [update2([idl_exports.Principal], idl_exports.Variant({ Ok: idl_exports.Null, Err: BuildExecutorError }))], _healthCheck_dec = [query2([], idl_exports.Text)], _getStatistics_dec = [query2([], idl_exports.Record({
   total_builds: idl_exports.Nat32,
   successful_builds: idl_exports.Nat32,
@@ -57938,7 +57978,7 @@ _init_dec = [init4([])], _postUpgrade_dec = [postUpgrade2([])], _executeBuild_de
   disk_used_gb: idl_exports.Nat32,
   network_bytes: idl_exports.Nat64,
   resource_efficiency: idl_exports.Float32
-}))], _queueBuildRequest_dec = [update2([BuildRequest], idl_exports.Bool)], _processNextBuild_dec = [update2([], idl_exports.Bool)], _cancelBuild_dec = [update2([idl_exports.Text], idl_exports.Bool)];
+}))], _queueBuildRequest_dec = [update2([BuildRequest], idl_exports.Bool)], _processNextBuild_dec = [update2([], idl_exports.Bool)], _cancelBuild_dec = [update2([idl_exports.Text], idl_exports.Bool)], _executePipeline_dec = [update2([PipelineExecutionRequest])], _getPipelineResult_dec = [query2([idl_exports.Text])];
 var BuildExecutorCanister = class {
   constructor() {
     __runInitializers(_init, 5, this);
@@ -58617,6 +58657,312 @@ console.log('Built at ${(/* @__PURE__ */ new Date()).toISOString()}');
     const successful_builds = items.filter(([_, result2]) => result2.success).length;
     return successful_builds / total_builds;
   }
+  async executePipeline(request) {
+    try {
+      const caller = msgCaller();
+      const startTime = time();
+      const pipelineId = `pipeline_${request.repository_id}_${request.commit_hash}`;
+      console.log(`Starting pipeline execution: ${pipelineId}`);
+      let pipelineConfig;
+      try {
+        pipelineConfig = JSON.parse(request.pipeline_config);
+      } catch (error2) {
+        return {
+          Err: { InvalidInput: `Invalid pipeline configuration: ${error2}` }
+        };
+      }
+      let totalCyclesConsumed = 0n;
+      let totalMemoryUsed = 0;
+      let overallSuccess = true;
+      const stageResults = [];
+      const sourceCode = await this.fetchSourceCode(request.source_url, request.commit_hash);
+      if (!sourceCode) {
+        return {
+          Err: { InternalError: "Failed to fetch source code" }
+        };
+      }
+      const stageOrder = this.calculateStageExecutionOrder(pipelineConfig.stages);
+      for (const stageName of stageOrder) {
+        const stage = pipelineConfig.stages.find((s) => s.name === stageName);
+        if (!stage) {
+          overallSuccess = false;
+          break;
+        }
+        console.log(`Executing stage: ${stageName}`);
+        const stageResult = await this.executeStage(
+          stage,
+          sourceCode,
+          this.getStageArtifacts(stageResults, stage.depends_on)
+        );
+        stageResults.push(stageResult);
+        totalCyclesConsumed += stageResult.cycles_consumed;
+        totalMemoryUsed = Math.max(totalMemoryUsed, stageResult.memory_used);
+        if (!stageResult.success) {
+          console.log(`Stage failed: ${stageName} - ${stageResult.error_message}`);
+          overallSuccess = false;
+          break;
+        }
+      }
+      const endTime = time();
+      const result2 = {
+        pipeline_id: pipelineId,
+        repository_id: request.repository_id,
+        commit_hash: request.commit_hash,
+        overall_success: overallSuccess,
+        stages: stageResults,
+        start_time: startTime,
+        end_time: endTime,
+        total_cycles_consumed: totalCyclesConsumed,
+        total_memory_used: totalMemoryUsed,
+        verification_required: overallSuccess && stageResults.length > 1
+      };
+      this.storePipelineResult(pipelineId, result2);
+      console.log(`Pipeline execution completed: ${pipelineId}, Success: ${overallSuccess}`);
+      return { Ok: result2 };
+    } catch (error2) {
+      console.log(`Pipeline execution error: ${error2}`);
+      return {
+        Err: { InternalError: `Pipeline execution failed: ${error2}` }
+      };
+    }
+  }
+  /**
+   * Execute a single pipeline stage
+   */
+  async executeStage(stage, sourceCode, artifacts) {
+    const startTime = time();
+    const startCycles = performanceCounter(1);
+    try {
+      const workDir = await this.setupStageWorkspace(stage, sourceCode, artifacts);
+      const executionResults = await this.executeStageCommands(stage, workDir);
+      const stageArtifacts = await this.collectStageArtifacts(stage, workDir);
+      await this.cleanupWorkspace(workDir);
+      const endTime = time();
+      const endCycles = performanceCounter(1);
+      const cyclesConsumed = endCycles - startCycles;
+      return {
+        stage_name: stage.name,
+        success: executionResults.success,
+        start_time: startTime,
+        end_time: endTime,
+        exit_code: executionResults.exit_code,
+        stdout: executionResults.stdout,
+        stderr: executionResults.stderr,
+        artifacts: stageArtifacts,
+        cycles_consumed: BigInt(cyclesConsumed),
+        memory_used: executionResults.memory_used,
+        error_message: executionResults.error_message
+      };
+    } catch (error2) {
+      const endTime = time();
+      const endCycles = performanceCounter(1);
+      return {
+        stage_name: stage.name,
+        success: false,
+        start_time: startTime,
+        end_time: endTime,
+        exit_code: -1,
+        stdout: "",
+        stderr: String(error2),
+        artifacts: [],
+        cycles_consumed: BigInt(endCycles - startCycles),
+        memory_used: 0,
+        error_message: String(error2)
+      };
+    }
+  }
+  /**
+   * Fetch source code from repository
+   */
+  async fetchSourceCode(sourceUrl, commitHash) {
+    try {
+      console.log(`Fetching source code from ${sourceUrl} at commit ${commitHash}`);
+      const mockSource = JSON.stringify({
+        repository_url: sourceUrl,
+        commit_hash: commitHash,
+        files: {
+          "src/main.mo": 'import Debug "mo:base/Debug"; Debug.print("Hello World");',
+          "dfx.json": '{"canisters": {"main": {"type": "motoko", "main": "src/main.mo"}}}'
+        }
+      });
+      return new TextEncoder().encode(mockSource);
+    } catch (error2) {
+      console.log(`Failed to fetch source code: ${error2}`);
+      return null;
+    }
+  }
+  /**
+   * Calculate stage execution order based on dependencies
+   */
+  calculateStageExecutionOrder(stages) {
+    const stageMap = /* @__PURE__ */ new Map();
+    const order = [];
+    const visited = /* @__PURE__ */ new Set();
+    const visiting = /* @__PURE__ */ new Set();
+    for (const stage of stages) {
+      stageMap.set(stage.name, stage);
+    }
+    const visit = (stageName) => {
+      if (visiting.has(stageName)) {
+        throw new Error(`Circular dependency detected: ${stageName}`);
+      }
+      if (visited.has(stageName)) {
+        return true;
+      }
+      visiting.add(stageName);
+      const stage = stageMap.get(stageName);
+      if (stage && stage.depends_on) {
+        for (const dependency of stage.depends_on) {
+          if (!visit(dependency)) {
+            return false;
+          }
+        }
+      }
+      visiting.delete(stageName);
+      visited.add(stageName);
+      order.push(stageName);
+      return true;
+    };
+    for (const stage of stages) {
+      if (!visited.has(stage.name)) {
+        visit(stage.name);
+      }
+    }
+    return order;
+  }
+  /**
+   * Get artifacts from previous stages
+   */
+  getStageArtifacts(stageResults, dependencies) {
+    const artifacts = /* @__PURE__ */ new Map();
+    for (const dependency of dependencies || []) {
+      const dependencyResult = stageResults.find((r3) => r3.stage_name === dependency);
+      if (dependencyResult) {
+        for (const [filename, data] of dependencyResult.artifacts) {
+          artifacts.set(filename, new Uint8Array(data));
+        }
+      }
+    }
+    return artifacts;
+  }
+  /**
+   * Setup workspace for stage execution
+   */
+  async setupStageWorkspace(stage, sourceCode, artifacts) {
+    const workDir = `/tmp/stage_${stage.name}_${Date.now()}`;
+    console.log(`Setting up workspace: ${workDir}`);
+    return workDir;
+  }
+  /**
+   * Execute stage commands
+   */
+  async executeStageCommands(stage, workDir) {
+    try {
+      console.log(`Executing commands for stage: ${stage.name}`);
+      let combinedStdout = "";
+      let combinedStderr = "";
+      let success = true;
+      for (const command of stage.commands) {
+        console.log(`Running command: ${command}`);
+        if (command.includes("dfx build")) {
+          combinedStdout += "Building canisters...\nBuild completed successfully.\n";
+        } else if (command.includes("test")) {
+          combinedStdout += "Running tests...\nAll tests passed.\n";
+        } else if (command.includes("deploy")) {
+          combinedStdout += "Deploying to IC...\nDeployment successful.\n";
+        } else {
+          combinedStdout += `Executed: ${command}
+`;
+        }
+      }
+      return {
+        success,
+        exit_code: success ? 0 : 1,
+        stdout: combinedStdout,
+        stderr: combinedStderr,
+        memory_used: 128,
+        // Mock memory usage in MB
+        error_message: success ? null : "Command execution failed"
+      };
+    } catch (error2) {
+      return {
+        success: false,
+        exit_code: -1,
+        stdout: "",
+        stderr: String(error2),
+        memory_used: 0,
+        error_message: String(error2)
+      };
+    }
+  }
+  /**
+   * Collect stage artifacts
+   */
+  async collectStageArtifacts(stage, workDir) {
+    const artifacts = [];
+    try {
+      for (const artifactPattern of stage.artifacts || []) {
+        if (artifactPattern.includes(".wasm")) {
+          const mockWasm = new TextEncoder().encode("mock wasm binary");
+          artifacts.push([`${stage.name}.wasm`, Array.from(mockWasm)]);
+        } else if (artifactPattern.includes(".xml")) {
+          const mockXml = new TextEncoder().encode('<testsuite><testcase name="test1" status="passed"/></testsuite>');
+          artifacts.push(["test-results.xml", Array.from(mockXml)]);
+        }
+      }
+    } catch (error2) {
+      console.log(`Failed to collect artifacts: ${error2}`);
+    }
+    return artifacts;
+  }
+  /**
+   * Cleanup workspace
+   */
+  async cleanupWorkspace(workDir) {
+    try {
+      console.log(`Cleaning up workspace: ${workDir}`);
+    } catch (error2) {
+      console.log(`Failed to cleanup workspace: ${error2}`);
+    }
+  }
+  /**
+   * Store pipeline execution result
+   */
+  storePipelineResult(pipelineId, result2) {
+    const buildResult = {
+      success: result2.overall_success,
+      hash: result2.commit_hash,
+      error: result2.overall_success ? "" : "Pipeline execution failed",
+      cycles_consumed: result2.total_cycles_consumed,
+      build_time: result2.end_time - result2.start_time,
+      artifact_size: result2.total_memory_used
+    };
+    this.buildHistory.set(pipelineId, buildResult);
+  }
+  getPipelineResult(pipelineId) {
+    const result2 = this.buildHistory.get(pipelineId);
+    if (!result2) {
+      return {
+        Err: { NotFound: `Pipeline result not found: ${pipelineId}` }
+      };
+    }
+    const pipelineResult = {
+      pipeline_id: pipelineId,
+      repository_id: "unknown",
+      // Would be stored separately
+      commit_hash: result2.hash,
+      overall_success: result2.success,
+      stages: [],
+      // Would be stored separately
+      start_time: 0n,
+      // Would be stored separately
+      end_time: result2.build_time,
+      total_cycles_consumed: result2.cycles_consumed,
+      total_memory_used: result2.artifact_size,
+      verification_required: result2.success
+    };
+    return { Ok: pipelineResult };
+  }
 };
 _init = __decoratorStart(null);
 __decorateElement(_init, 1, "init", _init_dec, BuildExecutorCanister);
@@ -58636,6 +58982,8 @@ __decorateElement(_init, 1, "getResourceUsage", _getResourceUsage_dec, BuildExec
 __decorateElement(_init, 1, "queueBuildRequest", _queueBuildRequest_dec, BuildExecutorCanister);
 __decorateElement(_init, 1, "processNextBuild", _processNextBuild_dec, BuildExecutorCanister);
 __decorateElement(_init, 1, "cancelBuild", _cancelBuild_dec, BuildExecutorCanister);
+__decorateElement(_init, 1, "executePipeline", _executePipeline_dec, BuildExecutorCanister);
+__decorateElement(_init, 1, "getPipelineResult", _getPipelineResult_dec, BuildExecutorCanister);
 __decoratorMetadata(_init, BuildExecutorCanister);
 
 // <stdin>

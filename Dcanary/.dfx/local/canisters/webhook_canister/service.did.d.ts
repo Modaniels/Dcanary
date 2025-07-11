@@ -3,8 +3,11 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface _SERVICE {
+  'addBuildExecutor' : ActorMethod<[Principal], undefined>,
+  'getBuildQueueStatus' : ActorMethod<[], undefined>,
   'getBuildTrigger' : ActorMethod<[string], undefined>,
   'getBuildTriggers' : ActorMethod<[string], undefined>,
+  'getPipelineHistory' : ActorMethod<[string], undefined>,
   'getRepository' : ActorMethod<[string], undefined>,
   'handleWebhookEvent' : ActorMethod<
     [string, string, string, string, [] | [string]],
@@ -25,7 +28,12 @@ export interface _SERVICE {
     ],
     undefined
   >,
+  'setPipelineConfigCanister' : ActorMethod<[Principal], undefined>,
   'setVerificationCanister' : ActorMethod<[Principal], undefined>,
+  'triggerPipelineExecution' : ActorMethod<
+    [string, string, string, string, string, string],
+    undefined
+  >,
   'updateRepository' : ActorMethod<
     [string, boolean, boolean, Array<string>],
     undefined

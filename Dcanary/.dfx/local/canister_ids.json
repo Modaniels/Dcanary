@@ -8,6 +8,12 @@
   "build_instructions_canister": {
     "local": "u6s2n-gx777-77774-qaaba-cai"
   },
+  "deployment_canister": {
+    "local": "ucwa4-rx777-77774-qaada-cai"
+  },
+  "pipeline_config_canister": {
+    "local": "ufxgi-4p777-77774-qaadq-cai"
+  },
   "verification_canister": {
     "local": "uzt4z-lp777-77774-qaabq-cai"
   },

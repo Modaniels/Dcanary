@@ -34,6 +34,22 @@
                 "output": "test/dfx_generated/webhook_canister",
                 "node_compatibility": true
             }
+        },
+        "pipeline_config_canister": {
+            "type": "azle",
+            "main": "src/pipeline_config_canister.ts",
+            "declarations": {
+                "output": "test/dfx_generated/pipeline_config_canister",
+                "node_compatibility": true
+            }
+        },
+        "deployment_canister": {
+            "type": "azle",
+            "main": "src/deployment_canister.ts",
+            "declarations": {
+                "output": "test/dfx_generated/deployment_canister",
+                "node_compatibility": true
+            }
         }
     }
 }

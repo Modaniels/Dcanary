@@ -1,0 +1,95 @@
+service : {
+  addPipelineStage : (
+      text,
+      record {
+        artifacts : vec text;
+        retry_count : nat8;
+        name : text;
+        resource_requirements : record {
+          memory_mb : nat32;
+          max_cycles : nat64;
+          storage_mb : nat32;
+          cpu_cores : nat8;
+        };
+        parallel_group : opt text;
+        depends_on : vec text;
+        cache_paths : vec text;
+        environment : vec record { text; text };
+        commands : vec text;
+        timeout_minutes : nat64;
+        runtime : text;
+      },
+    ) -> ();
+  createFromTemplate : (text, text, text, text) -> ();
+  deletePipeline : (text) -> ();
+  getPipelineConfig : (text) -> () query;
+  listAllPipelines : () -> () query;
+  listMyPipelines : () -> () query;
+  listTemplates : () -> () query;
+  registerPipeline : (text, text, text, opt text) -> ();
+  setPipelineEnvironment : (text, vec record { text; text }) -> ();
+  updatePipelineConfig : (
+      text,
+      record {
+        stages : vec record {
+          artifacts : vec text;
+          retry_count : nat8;
+          name : text;
+          resource_requirements : record {
+            memory_mb : nat32;
+            max_cycles : nat64;
+            storage_mb : nat32;
+            cpu_cores : nat8;
+          };
+          parallel_group : opt text;
+          depends_on : vec text;
+          cache_paths : vec text;
+          environment : vec record { text; text };
+          commands : vec text;
+          timeout_minutes : nat64;
+          runtime : text;
+        };
+        updated_at : nat64;
+        repository_id : text;
+        networks : vec record {
+          is_mainnet : bool;
+          default_gas_price : opt nat64;
+          name : text;
+          provider_url : text;
+        };
+        notifications : record {
+          notify_on_failure : bool;
+          slack_webhook : opt text;
+          discord_webhook : opt text;
+          email_recipients : vec text;
+          notify_on_success : bool;
+          notify_on_start : bool;
+        };
+        repository_url : text;
+        owner : principal;
+        name : text;
+        global_environment : vec record { text; text };
+        description : opt text;
+        created_at : nat64;
+        version : nat32;
+        is_active : bool;
+        triggers : vec variant {
+          Release : record { tag_pattern : opt text };
+          Push : record { branches : vec text };
+          PullRequest : record { target_branches : vec text };
+          Schedule : record { cron_expression : text };
+          Manual;
+        };
+      },
+    ) -> ();
+  updatePipelineTriggers : (
+      text,
+      vec variant {
+        Release : record { tag_pattern : opt text };
+        Push : record { branches : vec text };
+        PullRequest : record { target_branches : vec text };
+        Schedule : record { cron_expression : text };
+        Manual;
+      },
+    ) -> ();
+}

@@ -1,0 +1,39 @@
+service : {
+  addCycles : (principal, nat64) -> ();
+  addNetwork : (
+      text,
+      variant {
+        IC;
+        Local;
+        Custom : record { is_mainnet : bool; network_url : text };
+        Testnet : record { network_url : text };
+      },
+    ) -> ();
+  deployCanister : (
+      record {
+        wasm_module : blob;
+        cycles_amount : opt nat64;
+        reserved_cycles_limit : opt nat64;
+        strategy : variant { Upgrade; Install; Reinstall };
+        canister_id : opt principal;
+        network : variant {
+          IC;
+          Local;
+          Custom : record { is_mainnet : bool; network_url : text };
+          Testnet : record { network_url : text };
+        };
+        init_args : blob;
+        freeze_threshold : opt nat64;
+        canister_name : text;
+        memory_allocation : opt nat64;
+        compute_allocation : opt nat64;
+      },
+    ) -> ();
+  getCyclesBalance : (principal) -> () query;
+  getDeploymentStatus : (text) -> () query;
+  getLowCyclesAlerts : () -> () query;
+  listManagedCanisters : () -> () query;
+  listMyDeployments : () -> () query;
+  listNetworks : () -> () query;
+  upgradeCanister : (principal, blob, blob) -> ();
+}

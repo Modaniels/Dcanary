@@ -25,6 +25,21 @@ export const idlFactory = ({ IDL }) => {
         ],
         [],
       ),
+    'executePipeline' : IDL.Func(
+        [
+          IDL.Record({
+            'branch' : IDL.Text,
+            'pipeline_config' : IDL.Text,
+            'repository_id' : IDL.Text,
+            'source_url' : IDL.Text,
+            'timestamp' : IDL.Nat64,
+            'commit_hash' : IDL.Text,
+            'trigger_type' : IDL.Text,
+          }),
+        ],
+        [],
+        [],
+      ),
     'getAgentCapabilities' : IDL.Func(
         [],
         [
@@ -105,6 +120,7 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getPipelineResult' : IDL.Func([IDL.Text], [], ['query']),
     'getResourceUsage' : IDL.Func(
         [],
         [

@@ -1,5 +1,36 @@
 export const idlFactory = ({ IDL }) => {
   return IDL.Service({
+    'approveDeployment' : IDL.Func(
+        [IDL.Text, IDL.Bool, IDL.Opt(IDL.Text)],
+        [],
+        [],
+      ),
+    'configureDeploymentApproval' : IDL.Func(
+        [
+          IDL.Record({
+            'repository_id' : IDL.Text,
+            'pipeline_id' : IDL.Text,
+            'min_approvals' : IDL.Nat8,
+            'block_on_verification_failure' : IDL.Bool,
+            'required_approvers' : IDL.Vec(IDL.Principal),
+            'approval_status' : IDL.Variant({
+              'Approved' : IDL.Record({ 'approved_at' : IDL.Nat64 }),
+              'Rejected' : IDL.Record({
+                'rejected_by' : IDL.Principal,
+                'reason' : IDL.Text,
+              }),
+              'Expired' : IDL.Record({ 'expired_at' : IDL.Nat64 }),
+              'Pending' : IDL.Record({
+                'pending_approvers' : IDL.Vec(IDL.Principal),
+              }),
+            }),
+            'approval_timeout_hours' : IDL.Nat32,
+            'auto_approve_on_quality_gates' : IDL.Bool,
+          }),
+        ],
+        [],
+        [],
+      ),
     'create_pipeline_template' : IDL.Func(
         [
           IDL.Text,
@@ -84,6 +115,7 @@ export const idlFactory = ({ IDL }) => {
         ],
         [],
       ),
+    'getPipelineVerification' : IDL.Func([IDL.Text], [], ['query']),
     'get_active_verifications' : IDL.Func(
         [],
         [
@@ -237,6 +269,7 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'listPipelineVerifications' : IDL.Func([IDL.Text], [], ['query']),
     'list_active_pipeline_instances' : IDL.Func(
         [],
         [IDL.Vec(IDL.Text)],
@@ -366,6 +399,34 @@ export const idlFactory = ({ IDL }) => {
         ],
         [],
       ),
+    'setQualityGates' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Vec(
+            IDL.Record({
+              'name' : IDL.Text,
+              'required' : IDL.Bool,
+              'gate_type' : IDL.Variant({
+                'TestCoverage' : IDL.Record({ 'min_percentage' : IDL.Float32 }),
+                'CodeQuality' : IDL.Record({ 'max_violations' : IDL.Nat32 }),
+                'PerformanceTest' : IDL.Record({
+                  'max_response_time_ms' : IDL.Nat32,
+                }),
+                'SecurityScan' : IDL.Record({
+                  'max_vulnerabilities' : IDL.Nat32,
+                }),
+                'CustomCheck' : IDL.Record({
+                  'expected_output' : IDL.Text,
+                  'check_command' : IDL.Text,
+                }),
+              }),
+              'timeout_seconds' : IDL.Nat32,
+            })
+          ),
+        ],
+        [],
+        [],
+      ),
     'update_authorized_requester' : IDL.Func([IDL.Principal], [IDL.Bool], []),
     'update_build_executor_canisters' : IDL.Func(
         [IDL.Vec(IDL.Principal)],
@@ -375,6 +436,37 @@ export const idlFactory = ({ IDL }) => {
     'update_build_instructions_canister' : IDL.Func(
         [IDL.Principal],
         [IDL.Bool],
+        [],
+      ),
+    'verifyPipelineExecution' : IDL.Func(
+        [
+          IDL.Record({
+            'branch' : IDL.Text,
+            'required_consensus' : IDL.Nat8,
+            'pipeline_config' : IDL.Text,
+            'repository_id' : IDL.Text,
+            'pipeline_id' : IDL.Text,
+            'executor_results' : IDL.Vec(
+              IDL.Record({
+                'stage_results' : IDL.Vec(
+                  IDL.Record({
+                    'artifacts' : IDL.Vec(
+                      IDL.Tuple(IDL.Text, IDL.Vec(IDL.Nat8))
+                    ),
+                    'execution_time' : IDL.Nat64,
+                    'metadata' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+                    'cycles_consumed' : IDL.Nat64,
+                    'success' : IDL.Bool,
+                    'stage_name' : IDL.Text,
+                  })
+                ),
+                'executor_id' : IDL.Principal,
+              })
+            ),
+            'commit_hash' : IDL.Text,
+          }),
+        ],
+        [],
         [],
       ),
   });

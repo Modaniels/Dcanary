@@ -20,6 +20,17 @@ service : {
         };
       },
     );
+  executePipeline : (
+      record {
+        branch : text;
+        pipeline_config : text;
+        repository_id : text;
+        source_url : text;
+        timestamp : nat64;
+        commit_hash : text;
+        trigger_type : text;
+      },
+    ) -> ();
   getAgentCapabilities : () -> (
       record {
         available_resources : record {
@@ -78,6 +89,7 @@ service : {
         };
       },
     ) query;
+  getPipelineResult : (text) -> () query;
   getResourceUsage : () -> (
       record {
         resource_efficiency : float32;
