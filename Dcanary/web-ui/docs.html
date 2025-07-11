@@ -61,6 +61,11 @@
             max-width: 100%;
             overflow-x: hidden;
         }
+        
+        /* Cyan chick emoji styling */
+        .chick-cyan {
+            filter: hue-rotate(180deg) saturate(1.5) brightness(1.2);
+        }
     </style>
     <style>
         /* Ensure all code blocks are properly contained and scrollable */
@@ -167,10 +172,8 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center min-w-0 flex-1">
                     <a href="index.html" class="flex items-center group min-w-0">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform duration-200 flex-shrink-0">
-                            <i class="fas fa-shield-alt text-white text-lg sm:text-xl"></i>
-                        </div>
-                        <h1 class="ml-2 sm:ml-3 text-lg sm:text-2xl font-bold text-slate-100 group-hover:text-blue-400 transition-colors duration-200 truncate">Dcanary</h1>
+                        <span class="text-2xl sm:text-3xl group-hover:scale-105 transition-transform duration-200 mr-2 sm:mr-3 chick-cyan">🐤</span>
+                        <h1 class="text-lg sm:text-2xl font-bold text-slate-100 group-hover:text-blue-400 transition-colors duration-200 truncate">Dcanary</h1>
                     </a>
                     <span class="hidden sm:block ml-3 sm:ml-4 px-2 sm:px-3 py-1 bg-blue-600 text-blue-100 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap">Documentation</span>
                 </div>
@@ -467,9 +470,9 @@
                             <div class="flex items-start sm:items-center flex-col sm:flex-row">
                                 <div class="flex items-center min-w-0 flex-1">
                                     <span class="text-green-400 font-mono text-sm sm:text-base">$</span>
-                                    <code class="text-white ml-2 font-mono text-xs sm:text-sm break-all">cd cli && npm install -g .</code>
+                                    <code class="text-white ml-2 font-mono text-xs sm:text-sm break-all">npm install -g @dcanary/cli</code>
                                 </div>
-                                <button class="ml-0 sm:ml-2 mt-2 sm:mt-0 text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded self-start" onclick="copyToClipboard('cd cli && npm install -g .', this)">
+                                <button class="ml-0 sm:ml-2 mt-2 sm:mt-0 text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded self-start" onclick="copyToClipboard('npm install -g @dcanary/cli', this)">
                                     <i class="fas fa-copy text-sm"></i>
                                 </button>
                             </div>
@@ -719,7 +722,7 @@ env:
                                 <div class="h-8 w-px bg-gray-300 mx-auto"></div>
                                 <div class="inline-block bg-purple-100 p-4 rounded-lg mb-4">
                                     <i class="fas fa-terminal text-purple-600 text-2xl"></i>
-                                    <p class="text-sm font-medium text-purple-900 mt-2">Mody CLI</p>
+                                    <p class="text-sm font-medium text-purple-900 mt-2">DCanary CLI</p>
                                 </div>
                                 <div class="h-8 w-px bg-gray-300 mx-auto"></div>
                                 <div class="grid grid-cols-3 gap-4 mt-4">
@@ -2046,17 +2049,17 @@ echo "📊 Build hash: ${BUILD_HASH}"
                                 <h4 class="font-semibold text-slate-100 mb-3">3. Dcanary Integration</h4>
                                 <pre class="text-sm bg-gray-900 text-white p-3 rounded"><code class="language-bash">
 # Initialize project
-mody init my-typescript-app
+dcanary init my-typescript-app
 
 # Add build instructions
-mody add-instructions \
+dcanary add-instructions \
   --project-id "my-typescript-app" \
   --version "1.0.0" \
   --file "./scripts/build.sh" \
   --timeout 20
 
 # Setup GitHub webhook
-mody scm register "my-typescript-app" \
+dcanary scm register "my-typescript-app" \
   --provider github \
   --owner "your-username" \
   --repo "my-typescript-app" \
@@ -2065,19 +2068,19 @@ mody scm register "my-typescript-app" \
   --branches "main,develop"
 
 # Configure webhook endpoint
-mody webhook configure \
+dcanary webhook configure \
   --url "https://your-webhook-handler.com/webhook" \
   --secret "webhook-secret"
 
 # Request verification
-mody request-verification \
+dcanary request-verification \
   --project-id "my-typescript-app" \
   --version "1.0.0" \
   --executors 3 \
   --priority normal
 
 # Monitor verification status
-mody get-status --verification-id "ver_123456"
+dcanary get-status --verification-id "ver_123456"
                                 </code></pre>
                             </div>
                         </div>
@@ -2155,9 +2158,9 @@ mody get-status --verification-id "ver_123456"
                                 <div>
                                     <h4 class="font-medium text-blue-900 mb-2">Enable Debug Mode</h4>
                                     <pre class="text-sm bg-blue-100 p-3 rounded"><code class="language-bash">
-export MODY_DEBUG=true
-export MODY_LOG_LEVEL=debug
-mody --verbose [command]
+export DCANARY_DEBUG=true
+export DCANARY_LOG_LEVEL=debug
+dcanary --verbose [command]
                                     </code></pre>
                                 </div>
                                 
@@ -2165,13 +2168,13 @@ mody --verbose [command]
                                     <h4 class="font-medium text-blue-900 mb-2">View Build Logs</h4>
                                     <pre class="text-sm bg-blue-100 p-3 rounded"><code class="language-bash">
 # View recent logs
-mody logs --project-id "my-project" --lines 100
+dcanary logs --project-id "my-project" --lines 100
 
 # View specific verification logs
-mody logs --verification-id "ver_123456" --detailed
+dcanary logs --verification-id "ver_123456" --detailed
 
 # Export logs for analysis
-mody logs --project-id "my-project" --export logs.json
+dcanary logs --project-id "my-project" --export logs.json
                                     </code></pre>
                                 </div>
                                 
@@ -2179,13 +2182,13 @@ mody logs --project-id "my-project" --export logs.json
                                     <h4 class="font-medium text-blue-900 mb-2">Test Build Locally</h4>
                                     <pre class="text-sm bg-blue-100 p-3 rounded"><code class="language-bash">
 # Test build script locally
-mody test-build --project-id "my-project" --version "1.0.0"
+dcanary test-build --project-id "my-project" --version "1.0.0"
 
 # Validate build instructions
-mody validate --file "./build.sh"
+dcanary validate --file "./build.sh"
 
 # Check executor compatibility
-mody check-executors --project-id "my-project"
+dcanary check-executors --project-id "my-project"
                                     </code></pre>
                                 </div>
                             </div>
@@ -2245,7 +2248,7 @@ type PipelineStage = {
                             </h4>
                             <pre class="text-sm text-blue-800 overflow-x-auto"><code class="language-bash">
 # Create template
-mody template create typescript-webapp \
+dcanary template create typescript-webapp \
   --name "TypeScript Web Application" \
   --description "Full CI/CD pipeline for TypeScript web apps" \
   --parameter NODE_VERSION:choice:18,20,22:20 \
@@ -2256,7 +2259,7 @@ mody template create typescript-webapp \
   --stage deploy:"npm run deploy:${ENVIRONMENT}"
 
 # Use template
-mody pipeline run typescript-webapp my-project \
+dcanary pipeline run typescript-webapp my-project \
   --param NODE_VERSION=20 \
   --param ENVIRONMENT=production
                             </code></pre>
