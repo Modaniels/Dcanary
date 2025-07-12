@@ -10,7 +10,7 @@ export interface Logger {
   setLevel(level: LogLevel): void;
 }
 
-export type LogLevel = "error" | "warn" | "info" | "debug" | "silent";
+export type LogLevel = "silent" | "error" | "warn" | "info" | "debug";
 
 class SimpleLogger implements Logger {
   private level: LogLevel = "error"; // Default to only showing errors.
@@ -20,7 +20,7 @@ class SimpleLogger implements Logger {
     const envLevel = process.env.DCANARY_LOG_LEVEL as LogLevel;
     if (
       envLevel &&
-      ["error", "warn", "info", "debug", "silent"].includes(envLevel)
+      ["silent", "error", "warn", "info", "debug"].includes(envLevel)
     ) {
       this.level = envLevel;
     }
@@ -39,9 +39,7 @@ class SimpleLogger implements Logger {
       info: 2,
       debug: 3,
     };
-    const currentLevel = levels[this.level];
-    const messageLevel = levels[level];
-    return messageLevel <= currentLevel;
+    return levels[level] <= levels[this.level];
   }
 
   /**
