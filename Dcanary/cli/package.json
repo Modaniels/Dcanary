@@ -4,7 +4,7 @@
   "description": "Dcanary - Decentralized CI/CD Pipeline for Internet Computer Projects",
   "main": "dist/index.js",
   "bin": {
-    "dcanary-cli": "dist/index.js"
+    "dcanary": "dist/index.js"
   },
   "publishConfig": {
     "access": "public",
@@ -93,7 +93,7 @@
   "bugs": {
     "url": "https://github.com/modaniels/Dcanary/issues"
   },
-  "homepage": "https://dcanary.io",
+  "homepage": "https://dcanary.vercel.app",
   "engines": {
     "node": ">=16.0.0"
   }
