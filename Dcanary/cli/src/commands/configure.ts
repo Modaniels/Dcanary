@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import inquirer from "inquirer";
 import { CLIConfig, ValidationError } from "../types";
 import { configManager } from "../utils/config";
 import { validateCanisterId } from "../utils/helpers";
@@ -14,13 +15,16 @@ import { logger } from "../utils/logger";
 
 /**
  * Creates the 'configure' command for the Dcanary CLI.
- * This command allows users to view, set, and reset CLI configuration settings.
+ * This command allows users to view, set, and reset CLI configuration settings,
+ * offering both an interactive mode and a flag-based mode for scripting.
  */
 export function createConfigureCommand(): Command {
   const command = new Command("configure");
 
   command
-    .description("Configure Dcanary CLI settings and canister IDs")
+    .description(
+      "Configure Dcanary CLI settings and canister IDs interactively or via flags.",
+    )
     .option(
       "--build-instructions-canister-id <id>",
       "Set build instructions canister ID",
@@ -36,16 +40,15 @@ export function createConfigureCommand(): Command {
     .option(
       "--timeout <seconds>",
       "Set default command timeout in seconds",
-      parseInt,
+      (v) => parseInt(v, 10),
     )
     .option("--wallet <id>", "Set default wallet canister ID")
     .option("--provider <url>", "Set IC provider URL")
     .option("--reset", "Reset configuration to defaults")
     .option("--show", "Show current configuration")
-    .action((options: CLIConfig) => {
+    .action(async (options: CLIConfig) => {
       try {
-        // If no options are provided, or only --show is used, display the current configuration.
-        if (Object.keys(options).length === 0 || options.show) {
+        if (options.show) {
           showConfiguration();
           return;
         }
@@ -57,92 +60,13 @@ export function createConfigureCommand(): Command {
           return;
         }
 
-        // A map to hold validated configuration updates.
-        const updates: Partial<CLIConfig> = {};
-
-        if (options.buildInstructionsCanisterId) {
-          validateCanisterId(options.buildInstructionsCanisterId);
-          updates.buildInstructionsCanisterId =
-            options.buildInstructionsCanisterId;
-        }
-
-        if (options.verificationCanisterId) {
-          validateCanisterId(options.verificationCanisterId);
-          updates.verificationCanisterId = options.verificationCanisterId;
-        }
-
-        if (options.webhookCanisterId) {
-          validateCanisterId(options.webhookCanisterId);
-          updates.webhookCanisterId = options.webhookCanisterId;
-        }
-
-        if (options.executorIds) {
-          const executorIds = options.executorIds.split(",").map((id: string) =>
-            id.trim()
-          );
-          executorIds.forEach(validateCanisterId);
-          updates.buildExecutorCanisterIds = executorIds;
-        }
-
-        if (options.network) {
-          if (!["ic", "local"].includes(options.network)) {
-            throw new ValidationError('Network must be either "ic" or "local"');
-          }
-          updates.network = options.network;
-        }
-
-        if (options.identity) {
-          updates.identity = options.identity;
-        }
-
-        if (options.timeout) {
-          if (options.timeout < 1 || options.timeout > 3600) {
-            throw new ValidationError(
-              "Timeout must be between 1 and 3600 seconds.",
-            );
-          }
-          updates.timeout = options.timeout;
-        }
-
-        if (options.wallet) {
-          validateCanisterId(options.wallet);
-          updates.walletCanisterId = options.wallet;
-        }
-
-        if (options.provider) {
-          updates.icProviderUrl = options.provider;
-        }
-
-        // Apply and save the updates.
-        configManager.setMany(updates);
-        configManager.saveConfig();
-
-        console.log();
-        printSuccess("Configuration updated successfully.");
-
-        console.log();
-        console.log(Colors.bold("Updated settings:"));
-        Object.entries(updates).forEach(([key, value]) => {
-          const displayKey = formatConfigKey(key);
-          const displayValue = Array.isArray(value)
-            ? value.join(", ")
-            : String(value);
-          printKeyValue(displayKey, displayValue, "success");
-        });
-
-        console.log();
-        if (configManager.isConfigured()) {
-          printInfo(
-            "✓ Configuration is complete. All required settings are present.",
-          );
+        // If any configuration flags are passed, use non-interactive mode.
+        // Otherwise, launch the interactive setup.
+        if (hasConfigurationFlags(options)) {
+          await handleNonInteractiveConfiguration(options);
         } else {
-          printInfo(
-            "⚠ Configuration is incomplete. Some required settings are missing.",
-          );
-          showMissingSettings();
+          await handleInteractiveConfiguration();
         }
-
-        logger.info("Configuration updated", { updates });
       } catch (error: any) {
         if (error instanceof ValidationError) {
           printError("Validation Error", error.message);
@@ -157,6 +81,162 @@ export function createConfigureCommand(): Command {
     });
 
   return command;
+}
+
+/**
+ * Checks if any configuration-specific flags were passed by the user.
+ * @param options The commander options object.
+ * @returns True if configuration flags are present, otherwise false.
+ */
+function hasConfigurationFlags(options: CLIConfig): boolean {
+  const configFlags = [
+    "buildInstructionsCanisterId",
+    "verificationCanisterId",
+    "webhookCanisterId",
+    "executorIds",
+    "network",
+    "identity",
+    "timeout",
+    "wallet",
+    "provider",
+  ];
+  return configFlags.some((flag) => options[flag] !== undefined);
+}
+
+/**
+ * Handles the interactive configuration flow using inquirer.
+ */
+async function handleInteractiveConfiguration(): Promise<void> {
+  printInfo("Entering interactive configuration mode...");
+  const currentConfig = configManager.getConfig();
+
+  const questions = [
+    {
+      type: "input",
+      name: "buildInstructionsCanisterId",
+      message: "Enter Build Instructions Canister ID:",
+      default: currentConfig.buildInstructionsCanisterId || "",
+      validate: (input: string) =>
+        !input || (validateCanisterId(input), true) || "Invalid Canister ID.",
+    },
+    {
+      type: "input",
+      name: "verificationCanisterId",
+      message: "Enter Verification Canister ID:",
+      default: currentConfig.verificationCanisterId || "",
+      validate: (input: string) =>
+        !input || (validateCanisterId(input), true) || "Invalid Canister ID.",
+    },
+    {
+      type: "input",
+      name: "webhookCanisterId",
+      message: "Enter Webhook Canister ID:",
+      default: currentConfig.webhookCanisterId || "",
+      validate: (input: string) =>
+        !input || (validateCanisterId(input), true) || "Invalid Canister ID.",
+    },
+    {
+      type: "input",
+      name: "executorIds",
+      message: "Enter Build Executor Canister IDs (comma-separated):",
+      default: (currentConfig.buildExecutorCanisterIds || []).join(","),
+      filter: (input: string) =>
+        input.split(",").map((id) => id.trim()).filter((id) => id),
+    },
+    {
+      type: "list",
+      name: "network",
+      message: "Select default network:",
+      choices: ["ic", "local"],
+      default: currentConfig.network || "local",
+    },
+    {
+      type: "input",
+      name: "identity",
+      message: "Enter path to your default identity file (optional):",
+      default: currentConfig.identity || "",
+    },
+    {
+      type: "number",
+      name: "timeout",
+      message: "Enter default command timeout in seconds:",
+      default: currentConfig.timeout || 600,
+      validate: (input: number) =>
+        (input > 0 && input <= 3600) || "Timeout must be between 1 and 3600.",
+    },
+  ];
+
+  const answers = await inquirer.prompt(questions);
+  configManager.setMany({
+    ...answers,
+    buildExecutorCanisterIds: answers.executorIds,
+  });
+  configManager.saveConfig();
+
+  console.log();
+  printSuccess("Configuration has been saved successfully!");
+  showConfiguration();
+}
+
+/**
+ * Handles the non-interactive, flag-based configuration flow.
+ */
+async function handleNonInteractiveConfiguration(
+  options: CLIConfig,
+): Promise<void> {
+  const updates: Partial<CLIConfig> = {};
+
+  if (options.buildInstructionsCanisterId) {
+    validateCanisterId(options.buildInstructionsCanisterId);
+    updates.buildInstructionsCanisterId = options.buildInstructionsCanisterId;
+  }
+  if (options.verificationCanisterId) {
+    validateCanisterId(options.verificationCanisterId);
+    updates.verificationCanisterId = options.verificationCanisterId;
+  }
+  if (options.webhookCanisterId) {
+    validateCanisterId(options.webhookCanisterId);
+    updates.webhookCanisterId = options.webhookCanisterId;
+  }
+  if (options.executorIds) {
+    const executorIds = (options.executorIds as unknown as string).split(",")
+      .map((id) => id.trim());
+    executorIds.forEach(validateCanisterId);
+    updates.buildExecutorCanisterIds = executorIds;
+  }
+  if (options.network) {
+    if (!["ic", "local"].includes(options.network)) {
+      throw new ValidationError('Network must be either "ic" or "local"');
+    }
+    updates.network = options.network;
+  }
+  if (options.identity) updates.identity = options.identity;
+  if (options.timeout) {
+    if (options.timeout < 1 || options.timeout > 3600) {
+      throw new ValidationError("Timeout must be between 1 and 3600 seconds.");
+    }
+    updates.timeout = options.timeout;
+  }
+  if (options.wallet) {
+    validateCanisterId(options.wallet);
+    updates.walletCanisterId = options.wallet;
+  }
+  if (options.provider) updates.icProviderUrl = options.provider;
+
+  configManager.setMany(updates);
+  configManager.saveConfig();
+
+  console.log();
+  printSuccess("Configuration updated successfully.");
+  console.log();
+  console.log(Colors.bold("Updated settings:"));
+  Object.entries(updates).forEach(([key, value]) => {
+    printKeyValue(
+      formatConfigKey(key),
+      Array.isArray(value) ? value.join(", ") : String(value),
+      "success",
+    );
+  });
 }
 
 /**
@@ -201,10 +281,12 @@ function showConfiguration(): void {
 
   console.log();
   console.log(
-    Colors.gray("To update, use: dcanary configure --option <value>"),
+    Colors.gray("To re-run interactive setup, use 'dcanary configure'"),
   );
   console.log(
-    Colors.gray("Example: dcanary configure --network ic --timeout 300"),
+    Colors.gray(
+      "To set a specific value, use 'dcanary configure --option <value>'",
+    ),
   );
   console.log();
 }
@@ -219,23 +301,18 @@ function showMissingSettings(): void {
   if (!config.buildInstructionsCanisterId) {
     missing.push("Build Instructions Canister ID");
   }
-  if (!config.verificationCanisterId) {
-    missing.push("Verification Canister ID");
-  }
+  if (!config.verificationCanisterId) missing.push("Verification Canister ID");
   if (
     !config.buildExecutorCanisterIds ||
     config.buildExecutorCanisterIds.length === 0
-  ) {
-    missing.push("Build Executor Canister IDs");
-  }
+  ) missing.push("Build Executor Canister IDs");
 
   if (missing.length > 0) {
     console.log();
     console.log(Colors.warning("Missing required settings:"));
-    missing.forEach((setting) => {
-      console.log(`  ${Colors.gray("•")} ${setting}`);
-    });
-    console.log(Colors.gray("You can set them using 'dcanary configure'"));
+    missing.forEach((setting) =>
+      console.log(`  ${Colors.gray("•")} ${setting}`)
+    );
   }
 }
 
