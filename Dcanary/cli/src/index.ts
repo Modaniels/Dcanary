@@ -19,6 +19,7 @@ import { createLogsCommand } from "./commands/logs";
 import { createConfigureCommand } from "./commands/configure";
 import { createVersionCommand } from "./commands/version";
 import { createSCMCommand } from "./commands/scm";
+import { createValidateCommand } from "./commands/validate";
 
 function main() {
   const program = new Command();
@@ -30,7 +31,7 @@ function main() {
     .version(VERSION)
     .option("-v, --verbose", "Enable verbose (debug) logging")
     .option("-q, --quiet", "Suppress all logger output (sets level to silent)")
-    .option("--log-level <level>", "Set log level (error, warn, info, debug)") // No default value
+    .option("--log-level <level>", "Set log level (error, warn, info, debug)")
     .option("--config <path>", "Path to a custom configuration file")
     .option(
       "--network <network>",
@@ -75,6 +76,7 @@ function main() {
   program.addCommand(createConfigureCommand());
   program.addCommand(createVersionCommand());
   program.addCommand(createSCMCommand());
+  program.addCommand(createValidateCommand()); // Add the new command here
 
   // Help customization for a better visual experience
   program.configureHelp({
@@ -92,7 +94,7 @@ function main() {
       `  ${Colors.cyan("dcanary init")}       # Initialize a new project`,
     );
     console.log(
-      `  ${Colors.cyan("dcanary analyze")}     # Analyze project structure`,
+      `  ${Colors.cyan("dcanary validate")}   # Validate your configuration`,
     );
     console.log(
       `  ${Colors.cyan("dcanary build")}       # Run a decentralized build`,
