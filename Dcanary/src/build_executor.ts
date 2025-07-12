@@ -15,6 +15,35 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // ============================================================================
+// BUILD EXECUTOR CANISTER - Enhanced with Off-Chain Agent Simulation
+// ============================================================================
+//
+// This canister now supports:
+// 1. Local build execution (original functionality)
+// 2. Simulated distributed execution across off-chain agents
+// 3. Consensus mechanism for build verification
+// 4. Executor performance tracking and reputation scoring
+// 5. Reward distribution and slashing for malicious behavior
+// 6. Agent pool management and health monitoring
+//
+// Key Features:
+// - Maintains all existing build execution capabilities
+// - Simulates a network of 5 distributed executors
+// - Uses consensus mechanism (67% agreement required)
+// - Tracks executor performance and reputation scores
+// - Supports both public and private executor pools
+// - Provides comprehensive monitoring and analytics
+//
+// Usage:
+// - executeBuild() now automatically uses distributed execution when simulation is enabled
+// - executeDistributedBuild() explicitly uses the distributed approach
+// - toggleSimulation() allows admin to enable/disable simulation mode
+// - getExecutorNetworkStatus() provides network health information
+// - getOffChainBuildStatus() shows status of distributed builds
+//
+// ============================================================================
+
+// ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
@@ -321,6 +350,149 @@ type PipelineResult =
     | { Ok: PipelineExecutionResult }
     | { Err: BuildExecutorError };
 
+/**
+ * Build execution attestation for consensus
+ */
+const BuildAttestation = IDL.Record({
+    executor_id: IDL.Principal,
+    build_request_hash: IDL.Text,
+    artifact_hash: IDL.Text,
+    execution_signature: IDL.Vec(IDL.Nat8),
+    execution_metadata: IDL.Record({
+        start_time: IDL.Nat64,
+        end_time: IDL.Nat64,
+        resource_usage: IDL.Record({
+            cpu_time_ms: IDL.Nat64,
+            memory_peak_mb: IDL.Nat32,
+            network_bytes: IDL.Nat64
+        }),
+        exit_code: IDL.Int32,
+        environment_hash: IDL.Text // Hash of executor environment
+    }),
+    trust_score: IDL.Float32
+});
+
+type BuildAttestation = {
+    executor_id: Principal;
+    build_request_hash: string;
+    artifact_hash: string;
+    execution_signature: number[];
+    execution_metadata: {
+        start_time: bigint;
+        end_time: bigint;
+        resource_usage: {
+            cpu_time_ms: bigint;
+            memory_peak_mb: number;
+            network_bytes: bigint;
+        };
+        exit_code: number;
+        environment_hash: string;
+    };
+    trust_score: number;
+};
+
+/**
+ * Consensus result for build verification
+ */
+const ConsensusResult = IDL.Record({
+    consensus_reached: IDL.Bool,
+    agreed_artifact_hash: IDL.Opt(IDL.Text),
+    participating_executors: IDL.Vec(IDL.Principal),
+    attestations: IDL.Vec(BuildAttestation),
+    consensus_confidence: IDL.Float32,
+    disputed_results: IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Text)), // executor -> hash
+    finalization_time: IDL.Nat64
+});
+
+type ConsensusResult = {
+    consensus_reached: boolean;
+    agreed_artifact_hash: string | null;
+    participating_executors: Principal[];
+    attestations: BuildAttestation[];
+    consensus_confidence: number;
+    disputed_results: [Principal, string][];
+    finalization_time: bigint;
+};
+
+/**
+ * Incentive and payment tracking
+ */
+const ExecutorReward = IDL.Record({
+    executor_id: IDL.Principal,
+    build_id: IDL.Text,
+    reward_amount: IDL.Nat64, // In cycles or tokens
+    reward_type: IDL.Variant({
+        BaseReward: IDL.Null,        // Basic participation reward
+        QualityBonus: IDL.Float32,   // Bonus for consistent quality
+        SpeedBonus: IDL.Float32,     // Bonus for fast execution
+        ConsensusBonus: IDL.Float32  // Bonus for consensus participation
+    }),
+    payment_status: IDL.Variant({
+        Pending: IDL.Null,
+        Paid: IDL.Nat64,
+        Disputed: IDL.Text
+    })
+});
+
+type ExecutorReward = {
+    executor_id: Principal;
+    build_id: string;
+    reward_amount: bigint;
+    reward_type: 
+        | { BaseReward: null }
+        | { QualityBonus: number }
+        | { SpeedBonus: number }
+        | { ConsensusBonus: number };
+    payment_status:
+        | { Pending: null }
+        | { Paid: bigint }
+        | { Disputed: string };
+};
+
+/**
+ * Executor identity and registration
+ */
+const ExecutorIdentity = IDL.Record({
+    executor_id: IDL.Principal,
+    public_key: IDL.Vec(IDL.Nat8),
+    endpoint_url: IDL.Text,
+    capabilities: AgentCapabilities,
+    stake_amount: IDL.Nat64,
+    registration_time: IDL.Nat64,
+    operational_model: IDL.Variant({
+        PublicNetwork: IDL.Null,      // Participates in public decentralized network
+        PrivateEnterprise: IDL.Text,  // Private pool identifier
+        HybridSaaS: IDL.Text         // SaaS provider identifier
+    }),
+    geographic_region: IDL.Text,
+    compliance_certifications: IDL.Vec(IDL.Text),
+    pricing_model: IDL.Record({
+        base_rate_per_minute: IDL.Nat64,  // In cycles or tokens
+        quality_multiplier: IDL.Float32,   // Reputation-based pricing
+        volume_discounts: IDL.Vec(IDL.Tuple(IDL.Nat32, IDL.Float32)) // (threshold, discount)
+    })
+});
+
+type ExecutorIdentity = {
+    executor_id: Principal;
+    public_key: number[];
+    endpoint_url: string;
+    capabilities: AgentCapabilities;
+    stake_amount: bigint;
+    registration_time: bigint;
+    operational_model: 
+        | { PublicNetwork: null }
+        | { PrivateEnterprise: string }
+        | { HybridSaaS: string };
+    geographic_region: string;
+    compliance_certifications: string[];
+    pricing_model: {
+        base_rate_per_minute: bigint;
+        quality_multiplier: number;
+        volume_discounts: [number, number][];
+    };
+};
+
 // ============================================================================
 // CANISTER STATE
 // ============================================================================
@@ -383,6 +555,84 @@ export default class BuildExecutorCanister {
     private deployedAt: bigint = 0n;
 
     // ============================================================================
+    // DECENTRALIZED EXECUTOR POOL STATE (Enhanced)
+    // ============================================================================
+    
+    // Registry of all build executors in the network
+    private executorRegistry = new StableBTreeMap<Principal, ExecutorIdentity>(1);
+    
+    // Track active consensus processes
+    private activeConsensus = new Map<string, {
+        build_id: string;
+        required_confirmations: number;
+        received_attestations: BuildAttestation[];
+        timeout: bigint;
+        consensus_threshold: number; // Percentage required for consensus
+    }>();
+    
+    // Executor performance tracking
+    private executorPerformance = new StableBTreeMap<Principal, {
+        total_builds: number;
+        successful_builds: number;
+        average_build_time: bigint;
+        reputation_score: number;
+        last_active: bigint;
+        stake_amount: bigint;
+        slashing_events: number;
+    }>(2);
+    
+    // Payment and incentive tracking
+    private pendingRewards = new StableBTreeMap<string, ExecutorReward>(3);
+    private rewardHistory = new StableBTreeMap<string, ExecutorReward>(4);
+    
+    // Network configuration for different operational models
+    private networkConfig = {
+        consensus_threshold: 0.67, // 67% agreement required
+        minimum_executors: 3,
+        maximum_executors: 100,
+        base_reward_per_build: 1000000n, // Base cycles reward
+        reputation_decay_rate: 0.01,
+        slashing_penalty: 0.1, // 10% of stake
+        executor_timeout_seconds: 600n // 10 minutes
+    };
+
+    // ============================================================================
+    // SIMULATED OFF-CHAIN AGENT STATE
+    // ============================================================================
+    
+    // Simulated off-chain executors
+    private simulatedExecutors = new Map<Principal, {
+        identity: ExecutorIdentity;
+        isOnline: boolean;
+        currentLoad: number;
+        successRate: number;
+        averageResponseTime: number;
+        lastSeen: bigint;
+    }>();
+    
+    // Track simulated builds being processed by off-chain agents
+    private offChainBuilds = new Map<string, {
+        buildId: string;
+        projectId: string;
+        version: string;
+        assignedExecutors: Principal[];
+        status: 'pending' | 'executing' | 'consensus' | 'completed' | 'failed';
+        startTime: bigint;
+        expectedCompletion: bigint;
+        attestations: BuildAttestation[];
+    }>();
+    
+    // Simulation configuration
+    private simulationConfig = {
+        enabled: true,
+        simulatedExecutorCount: 5,
+        consensusDelay: 3000, // 3 seconds for simulation
+        buildExecutionDelay: 5000, // 5 seconds for simulated build
+        failureRate: 0.1, // 10% chance of executor failure
+        networkDelay: 500, // 500ms network simulation
+    };
+
+    // ============================================================================
     // LIFECYCLE HOOKS
     // ============================================================================
 
@@ -435,10 +685,14 @@ export default class BuildExecutorCanister {
             network_bytes: 0n
         };
         
+        // Initialize simulated off-chain executors
+        this.initializeSimulatedExecutors();
+        
         console.log(`Build Executor Canister initialized at ${this.deployedAt}`);
         console.log(`Build Instructions Canister ID: ${this.buildInstructionsCanisterId.toText()}`);
         console.log(`Verification Canister Principal: ${this.verificationCanisterPrincipal.toText()}`);
         console.log(`Agent capabilities: ${JSON.stringify(this.agentCapabilities)}`);
+        console.log(`Simulated off-chain executors: ${this.simulatedExecutors.size}`);
     }
 
     /**
@@ -744,6 +998,20 @@ ${instructions}
             }
 
             console.log(`Starting build execution for ${projectId}@${version}`);
+
+            // If simulation is enabled and we have enough executors, use distributed execution
+            if (this.simulationConfig.enabled) {
+                const onlineExecutors = Array.from(this.simulatedExecutors.values())
+                    .filter(e => e.isOnline).length;
+                
+                if (onlineExecutors >= this.networkConfig.minimum_executors) {
+                    console.log(`Using distributed execution with ${onlineExecutors} online executors`);
+                    return await this.executeDistributedBuild(projectId, version);
+                }
+            }
+
+            // Fall back to local execution
+            console.log(`Using local execution (simulation disabled or insufficient executors)`);
 
             // Retrieve build instructions from build_instructions_canister
             const instructionsResult = await call(
@@ -1657,7 +1925,7 @@ ${instructions}
             artifact_size: result.total_memory_used
         };
 
-        this.buildHistory.set(pipelineId, buildResult);
+        this.buildHistory.insert(pipelineId, buildResult);
     }
 
     /**
@@ -1688,5 +1956,938 @@ ${instructions}
         };
 
         return { Ok: pipelineResult };
+    }
+
+    // ============================================================================
+    // DECENTRALIZED EXECUTOR NETWORK METHODS (Enhanced)
+    // ============================================================================
+
+    /**
+     * Register a new build executor in the network
+     */
+    @update([ExecutorIdentity], IDL.Variant({ Ok: IDL.Null, Err: BuildExecutorError }))
+    registerExecutor(identity: ExecutorIdentity): { Ok: null } | { Err: BuildExecutorError } {
+        const caller = msgCaller();
+        
+        // Verify the caller matches the executor ID
+        if (caller.toText() !== identity.executor_id.toText()) {
+            return {
+                Err: { Unauthorized: 'Caller must match executor ID' }
+            };
+        }
+
+        // Validate minimum stake requirement
+        const minStake = 10000000n; // 10M cycles minimum stake
+        if (identity.stake_amount < minStake) {
+            return {
+                Err: { InvalidInput: `Minimum stake required: ${minStake} cycles` }
+            };
+        }
+
+        // Store executor identity
+        this.executorRegistry.insert(identity.executor_id, identity);
+        
+        // Initialize performance tracking
+        this.executorPerformance.insert(identity.executor_id, {
+            total_builds: 0,
+            successful_builds: 0,
+            average_build_time: 0n,
+            reputation_score: 1.0, // Start with neutral reputation
+            last_active: time(),
+            stake_amount: identity.stake_amount,
+            slashing_events: 0
+        });
+
+        console.log(`Executor registered: ${identity.executor_id.toText()}`);
+        console.log(`Operational model: ${Object.keys(identity.operational_model)[0]}`);
+        console.log(`Stake amount: ${identity.stake_amount}`);
+
+        return { Ok: null };
+    }
+
+    /**
+     * Submit build attestation for consensus
+     */
+    @update([BuildAttestation], IDL.Variant({ Ok: IDL.Null, Err: BuildExecutorError }))
+    submitBuildAttestation(attestation: BuildAttestation): { Ok: null } | { Err: BuildExecutorError } {
+        const caller = msgCaller();
+        
+        // Verify the caller is a registered executor
+        const executorIdentity = this.executorRegistry.get(caller);
+        if (!executorIdentity) {
+            return {
+                Err: { Unauthorized: 'Executor not registered' }
+            };
+        }
+
+        // Verify the attestation is from the calling executor
+        if (attestation.executor_id.toText() !== caller.toText()) {
+            return {
+                Err: { Unauthorized: 'Attestation must be from calling executor' }
+            };
+        }
+
+        // Get or create consensus process
+        const buildId = attestation.build_request_hash;
+        let consensus = this.activeConsensus.get(buildId);
+        
+        if (!consensus) {
+            // Start new consensus process
+            consensus = {
+                build_id: buildId,
+                required_confirmations: Math.max(
+                    this.networkConfig.minimum_executors,
+                    Math.ceil(Number(this.executorRegistry.len()) * this.networkConfig.consensus_threshold)
+                ),
+                received_attestations: [],
+                timeout: time() + this.networkConfig.executor_timeout_seconds * 1_000_000_000n,
+                consensus_threshold: this.networkConfig.consensus_threshold
+            };
+            this.activeConsensus.set(buildId, consensus);
+        }
+
+        // Check for duplicate attestation from same executor
+        const existingAttestation = consensus.received_attestations.find(
+            a => a.executor_id.toText() === caller.toText()
+        );
+        if (existingAttestation) {
+            return {
+                Err: { InvalidInput: 'Executor has already submitted attestation for this build' }
+            };
+        }
+
+        // Add attestation to consensus
+        consensus.received_attestations.push(attestation);
+        
+        console.log(`Attestation received from ${caller.toText()}`);
+        console.log(`Build: ${buildId}, Artifact hash: ${attestation.artifact_hash}`);
+        console.log(`Attestations: ${consensus.received_attestations.length}/${consensus.required_confirmations}`);
+
+        // Check if consensus is reached
+        if (consensus.received_attestations.length >= consensus.required_confirmations) {
+            this.finalizeConsensus(buildId, consensus);
+        }
+
+        return { Ok: null };
+    }
+
+    /**
+     * Get consensus result for a build
+     */
+    @query([IDL.Text], IDL.Variant({ Ok: ConsensusResult, Err: BuildExecutorError }))
+    getConsensusResult(buildId: string): { Ok: ConsensusResult } | { Err: BuildExecutorError } {
+        const consensus = this.activeConsensus.get(buildId);
+        if (!consensus) {
+            return {
+                Err: { NotFound: `No consensus process found for build: ${buildId}` }
+            };
+        }
+
+        // Analyze attestations for consensus
+        const hashCounts = new Map<string, number>();
+        const executorsByHash = new Map<string, Principal[]>();
+        
+        for (const attestation of consensus.received_attestations) {
+            const hash = attestation.artifact_hash;
+            hashCounts.set(hash, (hashCounts.get(hash) || 0) + 1);
+            
+            if (!executorsByHash.has(hash)) {
+                executorsByHash.set(hash, []);
+            }
+            executorsByHash.get(hash)!.push(attestation.executor_id);
+        }
+
+        // Find majority hash
+        let majorityHash: string | null = null;
+        let maxCount = 0;
+        for (const [hash, count] of hashCounts) {
+            if (count > maxCount) {
+                maxCount = count;
+                majorityHash = hash;
+            }
+        }
+
+        const consensusReached = maxCount >= consensus.required_confirmations;
+        const confidence = consensus.received_attestations.length > 0 
+            ? maxCount / consensus.received_attestations.length 
+            : 0;
+
+        // Find disputed results
+        const disputedResults: [Principal, string][] = [];
+        if (majorityHash) {
+            for (const attestation of consensus.received_attestations) {
+                if (attestation.artifact_hash !== majorityHash) {
+                    disputedResults.push([attestation.executor_id, attestation.artifact_hash]);
+                }
+            }
+        }
+
+        const result: ConsensusResult = {
+            consensus_reached: consensusReached,
+            agreed_artifact_hash: consensusReached ? majorityHash : null,
+            participating_executors: consensus.received_attestations.map(a => a.executor_id),
+            attestations: consensus.received_attestations,
+            consensus_confidence: confidence,
+            disputed_results: disputedResults,
+            finalization_time: time()
+        };
+
+        return { Ok: result };
+    }
+
+    /**
+     * Get all registered executors
+     */
+    @query([], IDL.Vec(ExecutorIdentity))
+    getRegisteredExecutors(): ExecutorIdentity[] {
+        const executors: ExecutorIdentity[] = [];
+        
+        for (const [_, identity] of this.executorRegistry.items()) {
+            executors.push(identity);
+        }
+
+        return executors;
+    }
+
+    /**
+     * Get executor performance metrics
+     */
+    @query([IDL.Principal], IDL.Variant({ 
+        Ok: IDL.Record({
+            total_builds: IDL.Nat32,
+            successful_builds: IDL.Nat32,
+            success_rate: IDL.Float32,
+            average_build_time: IDL.Nat64,
+            reputation_score: IDL.Float32,
+            last_active: IDL.Nat64,
+            stake_amount: IDL.Nat64,
+            slashing_events: IDL.Nat32
+        }), 
+        Err: BuildExecutorError 
+    }))
+    getExecutorPerformance(executorId: Principal): any {
+        const performance = this.executorPerformance.get(executorId);
+        if (!performance) {
+            return {
+                Err: { NotFound: `Performance data not found for executor: ${executorId.toText()}` }
+            };
+        }
+
+        const successRate = performance.total_builds > 0 
+            ? performance.successful_builds / performance.total_builds 
+            : 0;
+
+        return {
+            Ok: {
+                total_builds: performance.total_builds,
+                successful_builds: performance.successful_builds,
+                success_rate: successRate,
+                average_build_time: performance.average_build_time,
+                reputation_score: performance.reputation_score,
+                last_active: performance.last_active,
+                stake_amount: performance.stake_amount,
+                slashing_events: performance.slashing_events
+            }
+        };
+    }
+
+    /**
+     * Distribute rewards to executors
+     */
+    @update([IDL.Text], IDL.Variant({ Ok: IDL.Vec(ExecutorReward), Err: BuildExecutorError }))
+    distributeRewards(buildId: string): { Ok: ExecutorReward[] } | { Err: BuildExecutorError } {
+        const caller = msgCaller();
+        
+        if (!this.isAdmin(caller)) {
+            return {
+                Err: { Unauthorized: 'Only admin can distribute rewards' }
+            };
+        }
+
+        const consensus = this.activeConsensus.get(buildId);
+        if (!consensus) {
+            return {
+                Err: { NotFound: `No consensus found for build: ${buildId}` }
+            };
+        }
+
+        const rewards: ExecutorReward[] = [];
+        const currentTime = time();
+
+        for (const attestation of consensus.received_attestations) {
+            const baseReward = this.networkConfig.base_reward_per_build;
+            let totalReward = baseReward;
+            
+            // Calculate bonuses
+            const performance = this.executorPerformance.get(attestation.executor_id);
+            if (performance) {
+                // Quality bonus based on reputation
+                const qualityBonus = performance.reputation_score > 0.8 
+                    ? Number(baseReward) * 0.2 
+                    : 0;
+                
+                // Speed bonus based on execution time
+                const executionTime = attestation.execution_metadata.end_time - attestation.execution_metadata.start_time;
+                const speedBonus = executionTime < 300_000_000_000n // Under 5 minutes
+                    ? Number(baseReward) * 0.1 
+                    : 0;
+
+                totalReward = baseReward + BigInt(qualityBonus + speedBonus);
+            }
+
+            const reward: ExecutorReward = {
+                executor_id: attestation.executor_id,
+                build_id: buildId,
+                reward_amount: totalReward,
+                reward_type: { BaseReward: null },
+                payment_status: { Pending: null }
+            };
+
+            const rewardKey = `${buildId}_${attestation.executor_id.toText()}`;
+            this.pendingRewards.insert(rewardKey, reward);
+            rewards.push(reward);
+
+            console.log(`Reward calculated for ${attestation.executor_id.toText()}: ${totalReward} cycles`);
+        }
+
+        return { Ok: rewards };
+    }
+
+    // ============================================================================
+    // SIMULATED OFF-CHAIN EXECUTOR METHODS
+    // ============================================================================
+
+    /**
+     * Initialize simulated off-chain executors
+     */
+    private initializeSimulatedExecutors(): void {
+        const baseIds = [
+            'rdmx6-jaaaa-aaaah-qcaaa-cai',
+            'rrkah-fqaaa-aaaah-qcaaq-cai', 
+            'renrk-eyaaa-aaaah-qcaaa-cai',
+            'rrkah-fqaaa-aaaah-qcaba-cai',
+            'rdmx6-jaaaa-aaaah-qcbba-cai'
+        ];
+
+        for (let i = 0; i < this.simulationConfig.simulatedExecutorCount; i++) {
+            const executorId = Principal.fromText(baseIds[i % baseIds.length]);
+            
+            const identity: ExecutorIdentity = {
+                executor_id: executorId,
+                public_key: this.generateRandomBytes(32),
+                endpoint_url: `https://executor-${i}.dcanary.network`,
+                capabilities: {
+                    labels: [`region-${i % 3}`, 'linux', 'docker'],
+                    max_concurrent_builds: 2 + (i % 3),
+                    available_resources: {
+                        cpu_cores: 4 + (i % 4),
+                        memory_mb: 8192 + (i * 1024),
+                        disk_space_gb: 100 + (i * 50),
+                        network_bandwidth: 1000 + (i * 200)
+                    },
+                    supported_languages: ['typescript', 'javascript', 'python', 'rust'],
+                    installed_tools: ['node', 'npm', 'docker', 'git', 'rustc', 'cargo']
+                },
+                stake_amount: BigInt(1000000 + (i * 500000)),
+                registration_time: time() - BigInt(i * 86400000000000), // Staggered registration
+                operational_model: { PublicNetwork: null },
+                geographic_region: ['us-east', 'eu-west', 'asia-pacific'][i % 3],
+                compliance_certifications: ['SOC2', 'ISO27001'],
+                pricing_model: {
+                    base_rate_per_minute: BigInt(1000 + (i * 100)),
+                    quality_multiplier: 1.0 + (i * 0.1),
+                    volume_discounts: [[10, 0.05], [50, 0.1], [100, 0.15]]
+                }
+            };
+
+            // Register executor
+            this.executorRegistry.insert(executorId, identity);
+
+            // Initialize performance tracking
+            this.executorPerformance.insert(executorId, {
+                total_builds: i * 10,
+                successful_builds: i * 9, // 90% success rate initially
+                average_build_time: BigInt(300000000000 + (i * 30000000000)), // 5-8 minutes
+                reputation_score: 0.9 + (i * 0.02),
+                last_active: time(),
+                stake_amount: BigInt(1000000 + (i * 500000)),
+                slashing_events: 0
+            });
+
+            // Initialize simulated executor state
+            this.simulatedExecutors.set(executorId, {
+                identity: identity,
+                isOnline: Math.random() > 0.1, // 90% online
+                currentLoad: Math.random() * 0.8, // Random load 0-80%
+                successRate: 0.85 + (Math.random() * 0.1), // 85-95% success rate
+                averageResponseTime: 1000 + (Math.random() * 2000), // 1-3 second response
+                lastSeen: time()
+            });
+
+            console.log(`Initialized simulated executor: ${executorId.toText()}`);
+        }
+    }
+
+    /**
+     * Generate random bytes for simulation
+     */
+    private generateRandomBytes(length: number): number[] {
+        const bytes: number[] = [];
+        for (let i = 0; i < length; i++) {
+            bytes.push(Math.floor(Math.random() * 256));
+        }
+        return bytes;
+    }
+
+    /**
+     * Simulate distributed build execution across off-chain agents
+     */
+    @update([IDL.Text, IDL.Text], BuildExecutorResult)
+    async executeDistributedBuild(projectId: string, version: string): Promise<BuildExecutorResult> {
+        const startTime = time();
+        const buildId = `distributed_${projectId}_${version}_${startTime}`;
+        const caller = msgCaller();
+
+        try {
+            // Check authorization
+            if (!this.isAuthorizedRequester(caller)) {
+                return {
+                    Err: {
+                        Unauthorized: `Caller ${caller.toText()} is not authorized to request builds`
+                    }
+                };
+            }
+
+            console.log(`Starting distributed build execution for ${projectId}@${version}, Build ID: ${buildId}`);
+
+            // Select available executors for consensus
+            const selectedExecutors = this.selectExecutorsForBuild();
+            
+            if (selectedExecutors.length < this.networkConfig.minimum_executors) {
+                return {
+                    Err: {
+                        ResourceExhausted: `Insufficient available executors: ${selectedExecutors.length} < ${this.networkConfig.minimum_executors}`
+                    }
+                };
+            }
+
+            // Initialize off-chain build tracking
+            this.offChainBuilds.set(buildId, {
+                buildId,
+                projectId,
+                version,
+                assignedExecutors: selectedExecutors,
+                status: 'pending',
+                startTime,
+                expectedCompletion: startTime + BigInt(this.simulationConfig.buildExecutionDelay * 1000000),
+                attestations: []
+            });
+
+            console.log(`Selected ${selectedExecutors.length} executors for distributed build`);
+
+            // Simulate build execution on selected executors
+            const buildPromises = selectedExecutors.map(executorId => 
+                this.simulateExecutorBuild(buildId, projectId, version, executorId)
+            );
+
+            // Wait for all builds to complete (with timeout)
+            const attestations = await Promise.all(buildPromises);
+            
+            // Filter successful attestations
+            const validAttestations = attestations.filter(att => att !== null) as BuildAttestation[];
+
+            if (validAttestations.length === 0) {
+                return {
+                    Err: {
+                        InternalError: 'All distributed builds failed'
+                    }
+                };
+            }
+
+            // Update build status
+            const buildTracker = this.offChainBuilds.get(buildId)!;
+            buildTracker.status = 'consensus';
+            buildTracker.attestations = validAttestations;
+
+            // Perform consensus analysis
+            const consensusResult = await this.performConsensusAnalysis(buildId, validAttestations);
+
+            if (!consensusResult.consensus_reached) {
+                buildTracker.status = 'failed';
+                return {
+                    Err: {
+                        InternalError: 'Failed to reach consensus on build results'
+                    }
+                };
+            }
+
+            // Create final build result
+            const endTime = time();
+            const finalResult: ExecuteBuildResult = {
+                success: true,
+                hash: consensusResult.agreed_artifact_hash!,
+                error: '',
+                cycles_consumed: validAttestations.reduce((sum, att) => 
+                    sum + BigInt(Number(att.execution_metadata.resource_usage.cpu_time_ms) * 100), 0n),
+                build_time: endTime - startTime,
+                artifact_size: Math.floor(Math.random() * 1000000) + 100000 // Simulated size
+            };
+
+            // Store in history
+            const historyKey = `${projectId}#${version}#${startTime}`;
+            this.buildHistory.insert(historyKey, finalResult);
+
+            // Update last successful hash
+            this.lastSuccessfulHash = finalResult.hash;
+
+            // Mark build as completed
+            buildTracker.status = 'completed';
+
+            // Distribute rewards
+            await this.simulateRewardDistribution(buildId, validAttestations);
+
+            console.log(`Distributed build completed successfully. Consensus: ${consensusResult.consensus_confidence * 100}%`);
+            console.log(`Final hash: ${finalResult.hash}`);
+
+            return { Ok: finalResult };
+
+        } catch (error: any) {
+            console.log(`Distributed build execution error: ${error.message}`);
+            
+            // Mark build as failed
+            const buildTracker = this.offChainBuilds.get(buildId);
+            if (buildTracker) {
+                buildTracker.status = 'failed';
+            }
+
+            return {
+                Err: {
+                    InternalError: `Distributed build execution failed: ${error.message}`
+                }
+            };
+        }
+    }
+
+    /**
+     * Select executors for a build based on availability and performance
+     */
+    private selectExecutorsForBuild(): Principal[] {
+        const availableExecutors: Principal[] = [];
+        
+        for (const [executorId, executor] of this.simulatedExecutors.entries()) {
+            // Check if executor is online and not overloaded
+            if (executor.isOnline && executor.currentLoad < 0.9) {
+                const performance = this.executorPerformance.get(executorId);
+                
+                // Prefer executors with good reputation
+                if (performance && performance.reputation_score > 0.7) {
+                    availableExecutors.push(executorId);
+                }
+            }
+        }
+
+        // Shuffle and select up to maximum executors
+        const shuffled = availableExecutors.sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, Math.min(this.networkConfig.maximum_executors, 5));
+    }
+
+    /**
+     * Simulate build execution on a single executor
+     */
+    private async simulateExecutorBuild(
+        buildId: string, 
+        projectId: string, 
+        version: string, 
+        executorId: Principal
+    ): Promise<BuildAttestation | null> {
+        try {
+            const executor = this.simulatedExecutors.get(executorId);
+            if (!executor || !executor.isOnline) {
+                console.log(`Executor ${executorId.toText()} is offline`);
+                return null;
+            }
+
+            // Simulate network delay
+            await this.simulateDelay(this.simulationConfig.networkDelay);
+
+            console.log(`Simulating build execution on executor: ${executorId.toText()}`);
+
+            // Simulate build execution time
+            const buildStartTime = time();
+            await this.simulateDelay(this.simulationConfig.buildExecutionDelay);
+            const buildEndTime = time();
+
+            // Simulate potential failure
+            if (Math.random() < this.simulationConfig.failureRate * (1 - executor.successRate)) {
+                console.log(`Simulated build failure on executor: ${executorId.toText()}`);
+                return null;
+            }
+
+            // Generate simulated artifact hash (with small chance of different result)
+            const baseHash = this.generateSimulatedHash(projectId, version);
+            const artifactHash = Math.random() < 0.05 ? // 5% chance of different hash
+                baseHash + '_variant_' + Math.floor(Math.random() * 1000) :
+                baseHash;
+
+            // Create execution signature (simulated)
+            const signature = this.generateRandomBytes(64);
+
+            // Generate execution metadata
+            const executionMetadata = {
+                start_time: buildStartTime,
+                end_time: buildEndTime,
+                resource_usage: {
+                    cpu_time_ms: BigInt(Math.floor(Math.random() * 300000) + 60000), // 1-5 minutes
+                    memory_peak_mb: Math.floor(Math.random() * 2048) + 512, // 512MB - 2.5GB
+                    network_bytes: BigInt(Math.floor(Math.random() * 1000000) + 100000) // 100KB - 1MB
+                },
+                exit_code: 0,
+                environment_hash: 'env_' + Math.floor(Math.random() * 1000000)
+            };
+
+            // Calculate trust score based on executor reputation
+            const performance = this.executorPerformance.get(executorId);
+            const trustScore = performance ? Math.min(1.0, performance.reputation_score) : 0.5;
+
+            const attestation: BuildAttestation = {
+                executor_id: executorId,
+                build_request_hash: this.generateSimulatedHash(buildId, 'request'),
+                artifact_hash: artifactHash,
+                execution_signature: signature,
+                execution_metadata: executionMetadata,
+                trust_score: trustScore
+            };
+
+            // Update executor load
+            executor.currentLoad = Math.max(0, executor.currentLoad - 0.2);
+            executor.lastSeen = time();
+
+            console.log(`Build attestation generated by ${executorId.toText()}: ${artifactHash}`);
+            return attestation;
+
+        } catch (error) {
+            console.log(`Error in simulated build execution: ${error}`);
+            return null;
+        }
+    }
+
+    /**
+     * Perform consensus analysis on build attestations
+     */
+    private async performConsensusAnalysis(
+        buildId: string, 
+        attestations: BuildAttestation[]
+    ): Promise<ConsensusResult> {
+        // Simulate consensus delay
+        await this.simulateDelay(this.simulationConfig.consensusDelay);
+
+        console.log(`Performing consensus analysis for build: ${buildId}`);
+        console.log(`Analyzing ${attestations.length} attestations`);
+
+        // Count hash occurrences
+        const hashCounts = new Map<string, number>();
+        const executorsByHash = new Map<string, Principal[]>();
+        
+        for (const attestation of attestations) {
+            const hash = attestation.artifact_hash;
+            hashCounts.set(hash, (hashCounts.get(hash) || 0) + 1);
+            
+            if (!executorsByHash.has(hash)) {
+                executorsByHash.set(hash, []);
+            }
+            executorsByHash.get(hash)!.push(attestation.executor_id);
+        }
+
+        // Find majority hash
+        let majorityHash: string | null = null;
+        let maxCount = 0;
+        for (const [hash, count] of hashCounts) {
+            if (count > maxCount) {
+                maxCount = count;
+                majorityHash = hash;
+            }
+        }
+
+        // Calculate consensus
+        const consensusThreshold = Math.ceil(attestations.length * this.networkConfig.consensus_threshold);
+        const consensusReached = maxCount >= consensusThreshold;
+        const confidence = attestations.length > 0 ? maxCount / attestations.length : 0;
+
+        // Find disputed results
+        const disputedResults: [Principal, string][] = [];
+        if (majorityHash) {
+            for (const attestation of attestations) {
+                if (attestation.artifact_hash !== majorityHash) {
+                    disputedResults.push([attestation.executor_id, attestation.artifact_hash]);
+                }
+            }
+        }
+
+        const result: ConsensusResult = {
+            consensus_reached: consensusReached,
+            agreed_artifact_hash: consensusReached ? majorityHash : null,
+            participating_executors: attestations.map(a => a.executor_id),
+            attestations: attestations,
+            consensus_confidence: confidence,
+            disputed_results: disputedResults,
+            finalization_time: time()
+        };
+
+        console.log(`Consensus result: ${consensusReached ? 'REACHED' : 'FAILED'}`);
+        console.log(`Confidence: ${(confidence * 100).toFixed(1)}%`);
+        console.log(`Majority hash: ${majorityHash}`);
+        console.log(`Disputed results: ${disputedResults.length}`);
+
+        return result;
+    }
+
+    /**
+     * Simulate reward distribution to executors
+     */
+    private async simulateRewardDistribution(
+        buildId: string, 
+        attestations: BuildAttestation[]
+    ): Promise<void> {
+        console.log(`Distributing rewards for build: ${buildId}`);
+
+        for (const attestation of attestations) {
+            const baseReward = this.networkConfig.base_reward_per_build;
+            const performance = this.executorPerformance.get(attestation.executor_id);
+            
+            let totalReward = baseReward;
+            
+            if (performance) {
+                // Quality bonus
+                const qualityBonus = performance.reputation_score > 0.9 
+                    ? Number(baseReward) * 0.2 
+                    : 0;
+                
+                // Speed bonus
+                const executionTime = attestation.execution_metadata.end_time - attestation.execution_metadata.start_time;
+                const speedBonus = executionTime < 240_000_000_000n // Under 4 minutes
+                    ? Number(baseReward) * 0.1 
+                    : 0;
+
+                totalReward = baseReward + BigInt(qualityBonus + speedBonus);
+            }
+
+            const reward: ExecutorReward = {
+                executor_id: attestation.executor_id,
+                build_id: buildId,
+                reward_amount: totalReward,
+                reward_type: { BaseReward: null },
+                payment_status: { Pending: null }
+            };
+
+            const rewardKey = `${buildId}_${attestation.executor_id.toText()}`;
+            this.pendingRewards.insert(rewardKey, reward);
+
+            console.log(`Reward distributed to ${attestation.executor_id.toText()}: ${totalReward} cycles`);
+        }
+    }
+
+    /**
+     * Generate simulated hash
+     */
+    private generateSimulatedHash(input1: string, input2: string): string {
+        const combined = input1 + input2 + time().toString();
+        let hash = 0;
+        for (let i = 0; i < combined.length; i++) {
+            const char = combined.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return `sim_${Math.abs(hash).toString(16)}_${Date.now()}`;
+    }
+
+    /**
+     * Simulate network/processing delay
+     */
+    private async simulateDelay(ms: number): Promise<void> {
+        return new Promise(resolve => {
+            setTimeout(resolve, ms);
+        });
+    }
+
+    /**
+     * Get status of off-chain builds
+     */
+    @query([], IDL.Vec(IDL.Record({
+        build_id: IDL.Text,
+        project_id: IDL.Text,
+        version: IDL.Text,
+        status: IDL.Text,
+        assigned_executors: IDL.Nat32,
+        attestations_received: IDL.Nat32,
+        start_time: IDL.Nat64,
+        expected_completion: IDL.Nat64
+    })))
+    getOffChainBuildStatus(): any[] {
+        const builds: any[] = [];
+        
+        for (const [_, build] of this.offChainBuilds.entries()) {
+            builds.push({
+                build_id: build.buildId,
+                project_id: build.projectId,
+                version: build.version,
+                status: build.status,
+                assigned_executors: build.assignedExecutors.length,
+                attestations_received: build.attestations.length,
+                start_time: build.startTime,
+                expected_completion: build.expectedCompletion
+            });
+        }
+
+        return builds.sort((a, b) => Number(b.start_time - a.start_time)).slice(0, 20); // Return last 20 builds
+    }
+
+    /**
+     * Get simulated executor network status
+     */
+    @query([], IDL.Record({
+        total_executors: IDL.Nat32,
+        online_executors: IDL.Nat32,
+        average_load: IDL.Float32,
+        network_health: IDL.Text,
+        last_consensus: IDL.Nat64
+    }))
+    getExecutorNetworkStatus(): any {
+        let onlineCount = 0;
+        let totalLoad = 0;
+        
+        for (const [_, executor] of this.simulatedExecutors.entries()) {
+            if (executor.isOnline) {
+                onlineCount++;
+                totalLoad += executor.currentLoad;
+            }
+        }
+
+        const averageLoad = onlineCount > 0 ? totalLoad / onlineCount : 0;
+        const healthStatus = onlineCount >= this.networkConfig.minimum_executors ? 
+            (averageLoad < 0.8 ? 'healthy' : 'stressed') : 'degraded';
+
+        return {
+            total_executors: this.simulatedExecutors.size,
+            online_executors: onlineCount,
+            average_load: averageLoad,
+            network_health: healthStatus,
+            last_consensus: time()
+        };
+    }
+
+    /**
+     * Toggle simulation mode (admin only)
+     */
+    @update([IDL.Bool], IDL.Bool)
+    toggleSimulation(enabled: boolean): boolean {
+        const caller = msgCaller();
+        
+        if (!this.isAdmin(caller)) {
+            console.log(`Unauthorized attempt to toggle simulation by ${caller.toText()}`);
+            return false;
+        }
+
+        this.simulationConfig.enabled = enabled;
+        console.log(`Simulation mode ${enabled ? 'enabled' : 'disabled'} by ${caller.toText()}`);
+        return true;
+    }
+
+    // ============================================================================
+    // MISSING CONSENSUS METHODS
+    // ============================================================================
+
+    /**
+     * Finalize consensus process
+     */
+    private finalizeConsensus(buildId: string, consensus: any): void {
+        console.log(`Finalizing consensus for build: ${buildId}`);
+        
+        // Analyze attestations
+        const hashCounts = new Map<string, number>();
+        for (const attestation of consensus.received_attestations) {
+            const hash = attestation.artifact_hash;
+            hashCounts.set(hash, (hashCounts.get(hash) || 0) + 1);
+        }
+
+        // Find majority hash
+        let majorityHash: string | null = null;
+        let maxCount = 0;
+        for (const [hash, count] of hashCounts) {
+            if (count > maxCount) {
+                maxCount = count;
+                majorityHash = hash;
+            }
+        }
+
+        // Update executor performance
+        for (const attestation of consensus.received_attestations) {
+            const isCorrect = attestation.artifact_hash === majorityHash;
+            this.updateExecutorPerformance(attestation.executor_id, isCorrect, attestation);
+        }
+
+        // Handle slashing for incorrect attestations
+        if (majorityHash) {
+            for (const attestation of consensus.received_attestations) {
+                if (attestation.artifact_hash !== majorityHash) {
+                    this.handleIncorrectAttestation(attestation.executor_id, buildId);
+                }
+            }
+        }
+
+        console.log(`Consensus finalized. Majority hash: ${majorityHash}`);
+        console.log(`Correct attestations: ${maxCount}/${consensus.received_attestations.length}`);
+    }
+
+    /**
+     * Update executor performance metrics
+     */
+    private updateExecutorPerformance(executorId: Principal, isCorrect: boolean, attestation: BuildAttestation): void {
+        const performance = this.executorPerformance.get(executorId);
+        if (!performance) return;
+
+        performance.total_builds++;
+        if (isCorrect) {
+            performance.successful_builds++;
+        }
+
+        // Update average build time
+        const buildTime = attestation.execution_metadata.end_time - attestation.execution_metadata.start_time;
+        performance.average_build_time = 
+            (performance.average_build_time * BigInt(performance.total_builds - 1) + buildTime) / 
+            BigInt(performance.total_builds);
+
+        // Update reputation score
+        const successRate = performance.successful_builds / performance.total_builds;
+        performance.reputation_score = Math.max(0.1, Math.min(2.0, 
+            performance.reputation_score * 0.95 + successRate * 0.05
+        ));
+
+        performance.last_active = time();
+
+        this.executorPerformance.insert(executorId, performance);
+    }
+
+    /**
+     * Handle incorrect attestation (potential slashing)
+     */
+    private handleIncorrectAttestation(executorId: Principal, buildId: string): void {
+        const performance = this.executorPerformance.get(executorId);
+        if (!performance) return;
+
+        performance.slashing_events++;
+        
+        // Apply slashing penalty
+        const penalty = BigInt(Number(performance.stake_amount) * this.networkConfig.slashing_penalty);
+        performance.stake_amount = performance.stake_amount > penalty 
+            ? performance.stake_amount - penalty 
+            : 0n;
+
+        // Reduce reputation score
+        performance.reputation_score *= 0.8;
+
+        this.executorPerformance.insert(executorId, performance);
+
+        console.log(`Executor ${executorId.toText()} slashed for incorrect attestation in build ${buildId}`);
+        console.log(`Penalty: ${penalty} cycles, New stake: ${performance.stake_amount}`);
     }
 }

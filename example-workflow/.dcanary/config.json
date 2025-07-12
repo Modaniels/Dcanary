@@ -1,0 +1,48 @@
+{
+  "project": {
+    "name": "hello-ic-project",
+    "version": "1.0.0",
+    "type": "motoko",
+    "description": "Example IC project for Dcanary CI/CD"
+  },
+  "source": {
+    "repository": "https://github.com/user/hello-ic-project.git",
+    "branch": "main",
+    "path": "/"
+  },
+  "build": {
+    "engine": "dfx",
+    "commands": [
+      "dfx start --background --clean",
+      "dfx build",
+      "dfx test"
+    ],
+    "artifacts": [
+      ".dfx/local/canisters/**/**.wasm",
+      ".dfx/local/canisters/**/**.did"
+    ],
+    "environment": {
+      "DFX_VERSION": "0.15.0",
+      "NODE_VERSION": "18",
+      "RUST_VERSION": "1.70.0"
+    }
+  },
+  "verification": {
+    "consensus_threshold": 3,
+    "timeout_minutes": 15,
+    "required_attestations": 2,
+    "trust_score_minimum": 0.8
+  },
+  "deployment": {
+    "target": "ic",
+    "canister_ids": {
+      "hello_backend": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+    },
+    "auto_deploy": true
+  },
+  "notifications": {
+    "webhook_url": "https://api.github.com/repos/user/hello-ic-project/statuses/",
+    "slack_webhook": "https://hooks.slack.com/services/...",
+    "email": "developer@company.com"
+  }
+}

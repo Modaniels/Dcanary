@@ -1,8 +1,14 @@
-# Dcanary Web UI Documentation
+# Dcanary Web UI
 
 ## Overview
 
 This is the official documentation website for **Dcanary** - a decentralized CI/CD pipeline system built on the Internet Computer Protocol (ICP). The web UI provides comprehensive documentation, installation guides, CLI references, and real-world examples.
+
+## Quick Start
+
+1. **Install dependencies** (if any): `npm install`
+2. **Open locally**: Open `index.html` in your browser
+3. **Deploy**: Use any static hosting service or see [deployment docs](./docs/DEPLOY.md)
 
 ## Features
 
@@ -31,8 +37,18 @@ web-ui/
 ├── index.html          # Main HTML file
 ├── styles.css          # Custom CSS styles
 ├── script.js           # JavaScript functionality
+├── docs.html           # Interactive documentation
+├── docs.js             # Documentation JavaScript
+├── analytics.js        # Analytics tracking
 ├── README.md           # This documentation
-└── assets/             # Images and other assets (future)
+├── package.json        # Dependencies
+├── vercel.json         # Deployment config
+├── manifest.json       # PWA manifest
+└── docs/               # Documentation files
+    ├── README.md       # Documentation index
+    ├── DEPLOY.md       # Deployment guide
+    ├── DEPLOYMENT_GUIDE.md
+    └── ...             # Other documentation
 ```
 
 ## Technologies Used

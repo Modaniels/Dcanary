@@ -166,6 +166,110 @@
             .nav-logo {
                 transform-origin: center;
             }
+            
+            /* Ensure hero section is properly sized on mobile */
+            .hero-content {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            /* Stack grid items on mobile */
+            .grid-responsive {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Adjust spacing for mobile */
+            .section-padding {
+                padding-top: 2rem;
+                padding-bottom: 2rem;
+            }
+            
+            /* Fix command code block layout on mobile */
+            .command-container {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 0.75rem !important;
+            }
+            
+            .command-container code {
+                width: 100% !important;
+                margin-right: 0 !important;
+                word-break: break-word !important;
+                white-space: pre-wrap !important;
+                overflow-wrap: break-word !important;
+            }
+            
+            .command-container button {
+                margin-left: 0 !important;
+                align-self: flex-start !important;
+            }
+            
+            /* Ensure all flex command containers are mobile responsive */
+            .bg-slate-800 > .flex,
+            .bg-slate-900 > .flex {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 0.75rem !important;
+            }
+            
+            .bg-slate-800 code,
+            .bg-slate-900 code {
+                width: 100% !important;
+                margin-right: 0 !important;
+                word-break: break-word !important;
+                white-space: pre-wrap !important;
+                font-size: 0.75rem !important;
+            }
+            
+            .bg-slate-800 button,
+            .bg-slate-900 button {
+                margin-left: 0 !important;
+                align-self: flex-start !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Extra small devices */
+            .text-6xl { font-size: 2.5rem; }
+            .text-5xl { font-size: 2rem; }
+            .text-4xl { font-size: 1.75rem; }
+            
+            /* Smaller padding for very small screens */
+            .px-4 { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .py-8 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+            
+            /* Ensure buttons are touch-friendly */
+            .btn-mobile {
+                min-height: 48px;
+                padding: 0.75rem 1.5rem;
+            }
+            
+            /* Better command container spacing */
+            .command-container {
+                gap: 1rem !important;
+            }
+            
+            /* Ensure code blocks are scrollable on very small screens */
+            .bg-slate-800,
+            .bg-slate-900 {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .bg-slate-800 code,
+            .bg-slate-900 code {
+                font-size: 0.7rem !important;
+                line-height: 1.3 !important;
+                word-break: break-word !important;
+                white-space: pre-wrap !important;
+            }
+            
+            /* Mobile menu enhancement */
+            #mobile-menu-btn {
+                padding: 0.75rem;
+                min-height: 48px;
+                min-width: 48px;
+            }
         }
         
         /* Cyan chick emoji styling */
@@ -196,8 +300,8 @@
                     </div>
                 </div>
                 <div class="md:hidden">
-                    <button id="mobile-menu-btn" class="text-slate-300 hover:text-blue-400 p-2 rounded-md hover:bg-blue-500/10 transition-all duration-200" title="Toggle mobile menu" aria-label="Toggle mobile menu">
-                        <i class="fas fa-bars text-xl"></i>
+                    <button id="mobile-menu-btn" class="text-slate-300 hover:text-blue-400 p-3 rounded-lg hover:bg-blue-500/10 transition-all duration-300 border border-slate-600/30 backdrop-blur-sm" title="Toggle mobile menu" aria-label="Toggle mobile menu">
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
                 </div>
             </div>
@@ -359,33 +463,7 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-w-0">
-                <div class="order-2 md:order-1">
-                    <div class="bg-gradient-to-r from-slate-700/50 to-slate-600/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-600/50">
-                        <h3 class="text-2xl font-bold text-slate-100 mb-6">The Name Behind the System</h3>
-                        <div class="space-y-6">
-                            <div class="flex items-start">
-                                <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                                    <i class="fas fa-user text-white"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-slate-100 mb-2">Daniel (D)</h4>
-                                    <p class="text-slate-300">Named after its creator, Daniel - representing personal innovation and dedication to decentralized technologies.</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                                    <i class="fas fa-bird text-white"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-slate-100 mb-2">Canary</h4>
-                                    <p class="text-slate-300">Inspired by the "canary in the coal mine" concept - early detection of issues in your build pipeline before they become critical problems.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="order-1 md:order-2">
+                <div class="order-1 md:order-1">
                     <div class="bg-gradient-to-r from-slate-600/50 to-slate-700/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-600/50">
                         <h3 class="text-2xl font-bold text-slate-100 mb-6">🚀 Your Deployment Superpowers</h3>
                         <div class="space-y-4">
@@ -519,11 +597,13 @@
                                 <span class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm mr-4 group-hover:scale-105 transition-all duration-300">1</span>
                                 <span class="text-slate-200 font-medium">Install DCanary CLI globally</span>
                             </div>
-                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                <code class="text-slate-200 whitespace-pre min-w-0">npm install -g @dcanary/cli</code>
-                                <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('npm install -g @dcanary/cli')" title="Copy to clipboard">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                            <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">npm install -g @dcanary/cli</code>
+                                    <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('npm install -g @dcanary/cli')" title="Copy to clipboard">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -532,11 +612,13 @@
                                 <span class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm mr-4 group-hover:scale-105 transition-all duration-300">2</span>
                                 <span class="text-slate-200 font-medium">Initialize your project</span>
                             </div>
-                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                <code class="text-slate-200 whitespace-pre min-w-0">dcanary init --type nodejs</code>
-                                <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary init --type nodejs')" title="Copy to clipboard">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                            <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary init --type nodejs</code>
+                                    <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary init --type nodejs')" title="Copy to clipboard">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -545,11 +627,13 @@
                                 <span class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-sm mr-4 group-hover:scale-105 transition-all duration-300">3</span>
                                 <span class="text-slate-200 font-medium">Create your first pipeline</span>
                             </div>
-                            <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                <code class="text-slate-200 whitespace-pre min-w-0">dcanary pipeline create --name "My App"</code>
-                                <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary pipeline create --name &quot;My App&quot;')" title="Copy to clipboard">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                            <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary pipeline create --name "My App"</code>
+                                    <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary pipeline create --name &quot;My App&quot;')" title="Copy to clipboard">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -595,11 +679,13 @@
                                         </div>
                                         Initialize Project
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                        <code class="text-slate-200 whitespace-pre min-w-0">dcanary init --type nodejs</code>
-                                        <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary init --type nodejs')" title="Copy to clipboard">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                    <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary init --type nodejs</code>
+                                            <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary init --type nodejs')" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-slate-300 mt-3">Set up DCanary for your project type (nodejs, rust, python, motoko)</p>
                                 </div>
@@ -611,11 +697,13 @@
                                         </div>
                                         Create Pipeline
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                        <code class="text-slate-200 whitespace-pre min-w-0">dcanary pipeline create --name "My App"</code>
-                                        <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary pipeline create --name &quot;My App&quot;')" title="Copy to clipboard">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                    <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary pipeline create --name "My App"</code>
+                                            <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary pipeline create --name &quot;My App&quot;')" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-slate-300 mt-3">Create a complete CI/CD pipeline for your project</p>
                                 </div>
@@ -627,11 +715,13 @@
                                         </div>
                                         Add Build Stages
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                        <code class="text-slate-200 whitespace-pre min-w-0">dcanary pipeline add-stage test --commands "npm test"</code>
-                                        <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary pipeline add-stage test --commands &quot;npm test&quot;')" title="Copy to clipboard">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                    <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 command-container">
+                                            <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary pipeline add-stage test --commands "npm test"</code>
+                                            <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary pipeline add-stage test --commands &quot;npm test&quot;')" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-slate-300 mt-3">Add install, test, build, and deploy stages to your pipeline</p>
                                 </div>
@@ -645,11 +735,13 @@
                                         </div>
                                         Trigger Build
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                        <code class="text-slate-200 whitespace-pre min-w-0">dcanary build trigger --repo "github:user/app"</code>
-                                        <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary build trigger --repo &quot;github:user/app&quot;')" title="Copy to clipboard">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                    <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 command-container">
+                                            <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary build trigger --repo "github:user/app"</code>
+                                            <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary build trigger --repo &quot;github:user/app&quot;')" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-slate-300 mt-3">Manually trigger a build or set up automatic triggers</p>
                                 </div>
@@ -661,11 +753,13 @@
                                         </div>
                                         Check Status
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                        <code class="text-slate-200 whitespace-pre min-w-0">dcanary status</code>
-                                        <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary status')" title="Copy to clipboard">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                    <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 command-container">
+                                            <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary status</code>
+                                            <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary status')" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-slate-300 mt-3">View all your pipelines and their current status</p>
                                 </div>
@@ -677,11 +771,13 @@
                                         </div>
                                         View Logs
                                     </h4>
-                                    <div class="relative flex items-center justify-between bg-slate-800 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-slate-600/50 min-w-0 max-w-full">
-                                        <code class="text-slate-200 whitespace-pre min-w-0">dcanary logs --follow</code>
-                                        <button class="ml-4 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0" onclick="copyToClipboard('dcanary logs --follow')" title="Copy to clipboard">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                    <div class="bg-slate-800 p-4 rounded-lg font-mono text-sm border border-slate-600/50">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 command-container">
+                                            <code class="text-slate-200 whitespace-pre overflow-x-auto flex-1 min-w-0">dcanary logs --follow</code>
+                                            <button class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-slate-100 border-none px-3 py-2 rounded transition-all duration-300 flex-shrink-0 self-start" onclick="copyToClipboard('dcanary logs --follow')" title="Copy to clipboard">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <p class="text-slate-300 mt-3">Watch real-time logs from your pipeline execution</p>
                                 </div>
@@ -950,7 +1046,7 @@
                         <i class="fas fa-download mr-2"></i>
                         Install Now
                     </a>
-                    <a href="https://github.com/username/dcanary" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold rounded-lg transform hover:scale-105 transition-all duration-300 bg-transparent border-2 border-slate-400 hover:bg-slate-400 hover:text-slate-900 text-slate-300">
+                    <a href="https://github.com/modaniels/Dcanary" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold rounded-lg transform hover:scale-105 transition-all duration-300 bg-transparent border-2 border-slate-400 hover:bg-slate-400 hover:text-slate-900 text-slate-300">
                         <i class="fab fa-github mr-2"></i>
                         View on GitHub
                     </a>
@@ -986,7 +1082,7 @@
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Resources</h4>
                     <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">GitHub Repository</a></li>
+                        <li><a href="https://github.com/modaniels/Dcanary" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">GitHub Repository</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">Issue Tracker</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">Contributing Guide</a></li>
                         <li><a href="#" class="hover:text-white transition-colors">Changelog</a></li>
@@ -1010,6 +1106,11 @@
         </div>
     </footer>
 
+    <!-- Back to top button -->
+    <button id="back-to-top" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 opacity-0 pointer-events-none z-50">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
     <script src="analytics.js"></script>
     <script src="script.js"></script>
     <script>
@@ -1030,6 +1131,59 @@
                 console.error('Could not copy text: ', err);
             });
         }
+
+        // Mobile menu toggle functionality
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                mobileMenu.classList.toggle('show');
+                
+                // Toggle hamburger icon
+                const icon = mobileMenuBtn.querySelector('i');
+                if (mobileMenu.classList.contains('hidden')) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                } else {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                }
+            });
+
+            // Close mobile menu when clicking on a link
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+            mobileNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenu.classList.remove('show');
+                    const icon = mobileMenuBtn.querySelector('i');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                });
+            });
+        }
+
+        // Back to top button functionality
+        const backToTopButton = document.getElementById('back-to-top');
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopButton.classList.remove('opacity-0', 'pointer-events-none');
+                backToTopButton.classList.add('opacity-100', 'pointer-events-auto');
+            } else {
+                backToTopButton.classList.remove('opacity-100', 'pointer-events-auto');
+                backToTopButton.classList.add('opacity-0', 'pointer-events-none');
+            }
+        });
+
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
     </script>
 </body>
 </html>
