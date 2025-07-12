@@ -21,3 +21,4 @@ bin-release/
 .azle/
 .dfx/
 node_modules/
+repomix*
