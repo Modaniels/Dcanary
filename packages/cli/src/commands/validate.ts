@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import fs from 'fs-extra';
 import { configManager } from '../utils/config';
-import { Colors, Spinner, printHeader, printError, printInfo } from '../utils/ui';
+import { Colors, Spinner, printHeader, printError, printInfo, printSuccess } from '../utils/ui';
 import { logger } from '../utils/logger';
 import { CanisterService } from '../services/canister';
 
@@ -79,7 +79,7 @@ export function createValidateCommand(): Command {
                 spinner.succeed();
                 
                 // 4. Ping canisters to check for responsiveness
-                const canisterService = new CanisterService(configManager.getNetworkUrl());
+                const canisterService = new CanisterService();
                 
                 if (config.buildInstructionsCanisterId) {
                     spinner.start('Pinging Build Instructions Canister...');

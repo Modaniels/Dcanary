@@ -56,7 +56,7 @@ export function createAddInstructionsCommand(): Command {
         const networkUrl = network === "ic"
           ? "https://ic0.app"
           : "http://127.0.0.1:4943";
-        const canisterService = new CanisterService(networkUrl);
+        const canisterService = new CanisterService();
 
         // Add build instructions
         spinner.start(

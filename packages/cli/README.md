@@ -54,17 +54,18 @@ dcanary deploy
 ## 📚 Learn More
 
 - **[Main DCanary Documentation](../../README.md)** - Overview and architecture
-- **[Complete Workflow Guide](../COMPLETE_WORKFLOW_GUIDE.md)** - Step-by-step tutorial
-- **[Quick Start Guide](../QUICK_START.md)** - Get running in 5 minutes
-- **[Implementation Status](../IMPLEMENTATION_STATUS.md)** - See what's ready to use
-- **[Testing Guide](../TESTING_PLAN.md)** - Test and verify everything works
+- **[Complete Workflow Guide](../docs/COMPLETE_WORKFLOW_GUIDE.md)** - Step-by-step tutorial
+- **[Quick Start Guide](../docs/QUICK_START.md)** - Get running in 5 minutes
+- **[Implementation Status](../docs/IMPLEMENTATION_STATUS.md)** - See what's ready to use
+- **[Testing Guide](../docs/TESTING_GUIDE.md)** - Test and verify everything works
+- **[DCanary Website](https://modaniels.github.io/Dcanary-site/)** - Official website
 
 ## 🐛 Issues & Support
 
 Having trouble? Check out:
 
 - **[GitHub Repository](https://github.com/modaniels/Dcanary)** - Source code and issues
-- **[Complete Documentation](../../README.md)** - Full guides and examples
+- **[DCanary Website](https://modaniels.github.io/Dcanary-site/)** - Documentation and guides
 
 ---
 

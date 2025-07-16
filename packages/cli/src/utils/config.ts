@@ -260,6 +260,14 @@ export class ConfigManager {
       );
     }
   }
+
+  /**
+   * Gets the path to the configuration file.
+   * @returns The absolute path to the configuration file.
+   */
+  getConfigPath(): string {
+    return this.configPath;
+  }
 }
 
 // Singleton instance for global access

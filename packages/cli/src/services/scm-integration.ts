@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
 import { logger } from '../utils/logger';
 import { configManager } from '../utils/config';
-import { canisterService } from './canister-integration';
+import { canisterService } from './canister';
 
 // ============================================================================
 // SCM INTEGRATION WITH CANISTER CONNECTION
