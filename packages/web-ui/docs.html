@@ -99,6 +99,11 @@
             border-collapse: collapse;
         }
         
+        /* Cyan chick emoji styling */
+        .chick-cyan {
+            filter: hue-rotate(180deg) saturate(1.5) brightness(1.2);
+        }
+        
         .docs-table th,
         .docs-table td {
             padding: 12px 16px;
@@ -502,7 +507,7 @@
             <!-- Logo -->
             <div class="flex items-center mb-8">
                 <a href="index.html" class="flex items-center group">
-                    <span class="text-2xl mr-3 group-hover:scale-110 transition-transform duration-300">🐤</span>
+                    <span class="text-2xl mr-3 chick-cyan group-hover:scale-110 transition-transform duration-300">🐤</span>
                     <h1 class="text-xl font-bold text-slate-100 group-hover:text-blue-400 transition-colors duration-200">DCanary Docs</h1>
                 </a>
             </div>
@@ -622,7 +627,7 @@
                             <div class="flex items-center mb-4 md:mb-0">
                                 <div class="relative">
                                     <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-lg opacity-20 animate-pulse"></div>
-                                    <span class="relative text-5xl md:text-6xl mr-6 block transform hover:scale-110 transition-transform duration-300">🐤</span>
+                                    <span class="relative text-5xl md:text-6xl mr-6 chick-cyan block transform hover:scale-110 transition-transform duration-300">🐤</span>
                                 </div>
                                 <div>
                                     <h1 class="text-4xl md:text-5xl font-bold text-slate-100 mb-2 bg-gradient-to-r from-slate-100 via-blue-200 to-slate-100 bg-clip-text text-transparent">
@@ -2871,7 +2876,7 @@ dcanary deploy --network ic</code></pre>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
-                                <h4 class="text-green-300 font-semibold mb-3">⚡ Speed Optimizations</h4>
+                                <h4 class="text-green-300 font-semibold mb-3">Speed Optimizations</h4>
                                 <ul class="text-green-200 space-y-2 text-sm">
                                     <li>• Enable dependency caching</li>
                                     <li>• Use minimal Docker base images</li>

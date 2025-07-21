@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: dcanary-web-ui
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: ./public
+    routes:
+      - type: rewrite
+        source: /docs
+        destination: /docs.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains

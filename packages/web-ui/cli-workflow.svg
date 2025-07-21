@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="terminal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#grid)"/>
+  
+  <!-- Title -->
+  <text x="600" y="50" text-anchor="middle" fill="#f8fafc" font-family="monospace" font-size="32" font-weight="bold">
+    🚀 DCanary CLI Workflow
+  </text>
+  
+  <!-- Step 1: Initialize -->
+  <g transform="translate(50, 120)">
+    <rect width="320" height="140" rx="12" fill="url(#terminal)" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="30" cy="30" r="8" fill="#ef4444"/>
+    <circle cx="50" cy="30" r="8" fill="#f59e0b"/>
+    <circle cx="70" cy="30" r="8" fill="#10b981"/>
+    <text x="30" y="65" fill="#10b981" font-family="monospace" font-size="14" font-weight="bold">1. Initialize Project</text>
+    <text x="30" y="85" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary init --type nodejs</text>
+    <text x="30" y="105" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary init --repo myrepo</text>
+    <text x="30" y="125" fill="#94a3b8" font-family="monospace" font-size="10">✅ Project configured</text>
+  </g>
+  
+  <!-- Step 2: Configure -->
+  <g transform="translate(430, 120)">
+    <rect width="320" height="140" rx="12" fill="url(#terminal)" stroke="#8b5cf6" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="30" cy="30" r="8" fill="#ef4444"/>
+    <circle cx="50" cy="30" r="8" fill="#f59e0b"/>
+    <circle cx="70" cy="30" r="8" fill="#10b981"/>
+    <text x="30" y="65" fill="#8b5cf6" font-family="monospace" font-size="14" font-weight="bold">2. Configure Settings</text>
+    <text x="30" y="85" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary configure</text>
+    <text x="30" y="105" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary analyze</text>
+    <text x="30" y="125" fill="#94a3b8" font-family="monospace" font-size="10">✅ Network & canisters set</text>
+  </g>
+  
+  <!-- Step 3: Build -->
+  <g transform="translate(810, 120)">
+    <rect width="320" height="140" rx="12" fill="url(#terminal)" stroke="#10b981" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="30" cy="30" r="8" fill="#ef4444"/>
+    <circle cx="50" cy="30" r="8" fill="#f59e0b"/>
+    <circle cx="70" cy="30" r="8" fill="#10b981"/>
+    <text x="30" y="65" fill="#10b981" font-family="monospace" font-size="14" font-weight="bold">3. Build & Verify</text>
+    <text x="30" y="85" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary build --nodes 3</text>
+    <text x="30" y="105" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary validate</text>
+    <text x="30" y="125" fill="#94a3b8" font-family="monospace" font-size="10">✅ Consensus achieved</text>
+  </g>
+  
+  <!-- Arrow 1 -->
+  <path d="M 370 190 L 420 190" stroke="url(#accent)" stroke-width="3" marker-end="url(#arrowhead)" filter="url(#glow)"/>
+  
+  <!-- Arrow 2 -->
+  <path d="M 750 190 L 800 190" stroke="url(#accent)" stroke-width="3" marker-end="url(#arrowhead)" filter="url(#glow)"/>
+  
+  <!-- Step 4: Deploy -->
+  <g transform="translate(240, 320)">
+    <rect width="320" height="140" rx="12" fill="url(#terminal)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="30" cy="30" r="8" fill="#ef4444"/>
+    <circle cx="50" cy="30" r="8" fill="#f59e0b"/>
+    <circle cx="70" cy="30" r="8" fill="#10b981"/>
+    <text x="30" y="65" fill="#f59e0b" font-family="monospace" font-size="14" font-weight="bold">4. Deploy</text>
+    <text x="30" y="85" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary deploy --env prod</text>
+    <text x="30" y="105" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary status</text>
+    <text x="30" y="125" fill="#94a3b8" font-family="monospace" font-size="10">✅ Live on Internet Computer</text>
+  </g>
+  
+  <!-- Step 5: Monitor -->
+  <g transform="translate(620, 320)">
+    <rect width="320" height="140" rx="12" fill="url(#terminal)" stroke="#06b6d4" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="30" cy="30" r="8" fill="#ef4444"/>
+    <circle cx="50" cy="30" r="8" fill="#f59e0b"/>
+    <circle cx="70" cy="30" r="8" fill="#10b981"/>
+    <text x="30" y="65" fill="#06b6d4" font-family="monospace" font-size="14" font-weight="bold">5. Monitor & Logs</text>
+    <text x="30" y="85" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary logs --follow</text>
+    <text x="30" y="105" fill="#e5e7eb" font-family="monospace" font-size="12">$ dcanary status --watch</text>
+    <text x="30" y="125" fill="#94a3b8" font-family="monospace" font-size="10">✅ Real-time monitoring</text>
+  </g>
+  
+  <!-- Arrow down from step 3 -->
+  <path d="M 970 260 Q 970 290 940 290 L 560 290" stroke="url(#accent)" stroke-width="3" marker-end="url(#arrowhead)" filter="url(#glow)"/>
+  
+  <!-- Arrow from step 4 to 5 -->
+  <path d="M 560 390 L 610 390" stroke="url(#accent)" stroke-width="3" marker-end="url(#arrowhead)" filter="url(#glow)"/>
+  
+  <!-- Central Architecture Box -->
+  <g transform="translate(300, 520)">
+    <rect width="600" height="200" rx="16" fill="rgba(30, 41, 59, 0.8)" stroke="url(#accent)" stroke-width="2" filter="url(#shadow)"/>
+    <text x="300" y="30" text-anchor="middle" fill="#f8fafc" font-family="monospace" font-size="18" font-weight="bold">
+      🏗️ Decentralized Architecture
+    </text>
+    
+    <!-- Canister boxes -->
+    <g transform="translate(30, 50)">
+      <rect width="120" height="60" rx="8" fill="#1f2937" stroke="#3b82f6" stroke-width="1"/>
+      <text x="60" y="25" text-anchor="middle" fill="#3b82f6" font-family="monospace" font-size="10" font-weight="bold">Build Instructions</text>
+      <text x="60" y="40" text-anchor="middle" fill="#e5e7eb" font-family="monospace" font-size="8">Canister</text>
+      <text x="60" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="8">Store & Manage</text>
+    </g>
+    
+    <g transform="translate(170, 50)">
+      <rect width="120" height="60" rx="8" fill="#1f2937" stroke="#8b5cf6" stroke-width="1"/>
+      <text x="60" y="25" text-anchor="middle" fill="#8b5cf6" font-family="monospace" font-size="10" font-weight="bold">Verification</text>
+      <text x="60" y="40" text-anchor="middle" fill="#e5e7eb" font-family="monospace" font-size="8">Canister</text>
+      <text x="60" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="8">Consensus Logic</text>
+    </g>
+    
+    <g transform="translate(310, 50)">
+      <rect width="120" height="60" rx="8" fill="#1f2937" stroke="#10b981" stroke-width="1"/>
+      <text x="60" y="25" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="10" font-weight="bold">Build Executor</text>
+      <text x="60" y="40" text-anchor="middle" fill="#e5e7eb" font-family="monospace" font-size="8">Canister</text>
+      <text x="60" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="8">Execute Builds</text>
+    </g>
+    
+    <g transform="translate(450, 50)">
+      <rect width="120" height="60" rx="8" fill="#1f2937" stroke="#f59e0b" stroke-width="1"/>
+      <text x="60" y="25" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="10" font-weight="bold">Webhook</text>
+      <text x="60" y="40" text-anchor="middle" fill="#e5e7eb" font-family="monospace" font-size="8">Canister</text>
+      <text x="60" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="8">Git Integration</text>
+    </g>
+    
+    <!-- Network indicator -->
+    <text x="300" y="140" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="12" font-weight="bold">
+      💫 Internet Computer Protocol Network
+    </text>
+    <text x="300" y="160" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">
+      Trustless • Tamper-proof • Scalable • Decentralized
+    </text>
+    <text x="300" y="180" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">
+      Multi-node consensus ensures build integrity & reproducibility
+    </text>
+  </g>
+  
+  <!-- Feature badges -->
+  <g transform="translate(50, 740)">
+    <rect width="140" height="30" rx="15" fill="rgba(59, 130, 246, 0.2)" stroke="#3b82f6" stroke-width="1"/>
+    <text x="70" y="20" text-anchor="middle" fill="#3b82f6" font-family="monospace" font-size="12" font-weight="bold">
+      🔒 Trustless
+    </text>
+  </g>
+  
+  <g transform="translate(210, 740)">
+    <rect width="140" height="30" rx="15" fill="rgba(139, 92, 246, 0.2)" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="70" y="20" text-anchor="middle" fill="#8b5cf6" font-family="monospace" font-size="12" font-weight="bold">
+      🛡️ Tamper-proof
+    </text>
+  </g>
+  
+  <g transform="translate(370, 740)">
+    <rect width="140" height="30" rx="15" fill="rgba(16, 185, 129, 0.2)" stroke="#10b981" stroke-width="1"/>
+    <text x="70" y="20" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="12" font-weight="bold">
+      ⚡ Fast
+    </text>
+  </g>
+  
+  <g transform="translate(530, 740)">
+    <rect width="140" height="30" rx="15" fill="rgba(245, 158, 11, 0.2)" stroke="#f59e0b" stroke-width="1"/>
+    <text x="70" y="20" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="12" font-weight="bold">
+      🔗 Git Integrated
+    </text>
+  </g>
+  
+  <g transform="translate(690, 740)">
+    <rect width="140" height="30" rx="15" fill="rgba(6, 182, 212, 0.2)" stroke="#06b6d4" stroke-width="1"/>
+    <text x="70" y="20" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="12" font-weight="bold">
+      📊 Real-time
+    </text>
+  </g>
+  
+  <g transform="translate(850, 740)">
+    <rect width="300" height="30" rx="15" fill="rgba(239, 68, 68, 0.2)" stroke="#ef4444" stroke-width="1"/>
+    <text x="150" y="20" text-anchor="middle" fill="#ef4444" font-family="monospace" font-size="12" font-weight="bold">
+      🌐 Internet Computer Powered
+    </text>
+  </g>
+  
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="url(#accent)"/>
+    </marker>
+  </defs>
+</svg>

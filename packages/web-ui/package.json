@@ -7,7 +7,6 @@
     "start": "npx serve . -p 8000",
     "dev": "npx live-server --port=8000 --open",
     "build": "mkdir -p public && cp -r *.html *.css *.js *.json *.png *.ico *.xml *.txt public/ 2>/dev/null || true",
-    "vercel-build": "npm run build",
     "minify-css": "npx cleancss -o styles.min.css styles.css",
     "minify-js": "npx terser script.js -o script.min.js --compress --mangle",
     "optimize": "echo 'Optimization complete'",
@@ -15,8 +14,6 @@
     "format": "npx prettier --write *.html *.css *.js *.md",
     "validate": "npx html-validate index.html docs.html",
     "test": "npm run lint && npm run validate",
-    "deploy": "vercel --prod",
-    "preview": "vercel",
     "serve": "python -m http.server 8000"
   },
   "keywords": [
@@ -29,7 +26,6 @@
     "pipeline",
     "documentation",
     "web-ui",
-    "vercel",
     "static-site",
     "responsive",
     "tailwindcss"
@@ -43,8 +39,7 @@
     "live-server": "^1.2.2",
     "prettier": "^3.1.1",
     "serve": "^14.2.1",
-    "terser": "^5.26.0",
-    "vercel": "^32.0.0"
+    "terser": "^5.26.0"
   },
   "dependencies": {},
   "repository": {
