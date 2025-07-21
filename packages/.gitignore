@@ -1,0 +1,26 @@
+# Build outputs
+dist/
+build/
+out/
+.output/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

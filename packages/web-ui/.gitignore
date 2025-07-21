@@ -3,6 +3,7 @@ dist/
 build/
 out/
 .output/
+public/
 
 # Dependencies
 node_modules/
@@ -47,6 +48,7 @@ logs/
 # Deployment
 .netlify/
 .render/
+.vercel/
 
 # Runtime data
 pids
@@ -102,3 +104,13 @@ jspm_packages/
 
 # TernJS port file
 .tern-port
+
+# Static site generators
+_site/
+.jekyll-cache/
+.jekyll-metadata
+
+# Editor backups
+*~
+\#*\#
+.\#*

@@ -3,22 +3,99 @@ bin-debug/
 bin-release/
 [Oo]bj/
 [Bb]in/
+dist/
+build/
+out/
+.output/
+coverage/
+public/
 
-# Other files and folders
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+jspm_packages/
+.npm/
+.yarn-integrity
+*.tgz
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .settings/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output
+
+# Optional caches
+.eslintcache
+.parcel-cache
+.node_repl_history
+
+# Framework-specific
+.next
+.nuxt
+.vuepress/dist
+
+# Deployment
+.netlify/
+.render/
+.vercel/
+
+# Serverless
+.serverless/
+
+# Build tools
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Project specific
+.azle/
+.dfx/
+repomix*
 
 # Executables
 *.swf
 *.air
 *.ipa
 *.apk
-
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
-#
-
-.azle/
-.dfx/
-node_modules/
-repomix*
