@@ -104,8 +104,8 @@ Every build step is recorded on-chain. Audit any pipeline execution, anytime, fo
 
 ## 📚 Documentation
 
-- **[Get Started](./Dcanary/docs/QUICK_START)** - Jump right in!
-- **[Complete Documentation](./Dcanary/docs/)** - All guides and references
+- **[Get Started](./Dcanary/packages/docs/QUICK_START)** - Jump right in!
+- **[Complete Documentation](./Dcanary/packages/docs/)** - All guides and references
 - **[Web Interface](./Dcanary/web-ui/)** - Visual dashboard
 - **[CLI Tools](./Dcanary/cli/)** - Command-line utilities
 
