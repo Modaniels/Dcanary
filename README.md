@@ -104,10 +104,10 @@ Every build step is recorded on-chain. Audit any pipeline execution, anytime, fo
 
 ## 📚 Documentation
 
-- **[Get Started](./packages/docs/QUICK_START)** - Jump right in!
+- **[Get Started](./packages/docs/QUICK_START.md)** - Jump right in!
 - **[Complete Documentation](./packages/docs/)** - All guides and references
-- **[Web Interface](./web-ui/)** - Visual dashboard
-- **[CLI Tools](./cli/)** - Command-line utilities
+- **[Web Interface](./packages/web-ui/)** - Visual dashboard
+- **[CLI Tools](./packages/cli/)** - Command-line utilities
 
 ## 🌐 Project Structure
 
